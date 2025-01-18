@@ -23,3 +23,10 @@ details[open] > *:not(summary) {
 details[open] summary:after {
   content: ' −';
 }
+
+iframe[src*="youtube.com"] {
+    aspect-ratio: 16 / 9;
+    height: auto;
+    width: 100%;
+    max-width: 640px;
+}

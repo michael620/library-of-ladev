@@ -21,6 +21,12 @@ module.exports = {
     initials: {
       type: 'string'
     },
+    role: {
+      type: 'string',
+      isIn: ['admin', 'user'],
+      description: 'The role of the user',
+      defaultsTo: 'user'
+    },
     email: {
       type: 'string',
       required: true,
@@ -43,7 +49,8 @@ module.exports = {
       isEmail: true,
       description:
         'A still-unverified email address that this user wants to change to',
-      columnName: 'email_change_candidate'
+      columnName: 'email_change_candidate',
+      allowNull: true
     },
     password: {
       type: 'string',
@@ -57,14 +64,16 @@ module.exports = {
       type: 'string',
       description:
         "A unique token used to verify the user's identity when recovering a password.  Expires after 1 use, or after a set amount of time has elapsed.",
-      columnName: 'password_reset_token'
+      columnName: 'password_reset_token',
+      allowNull: true
     },
     passwordResetTokenExpiresAt: {
       type: 'number',
       description:
         "A JS timestamp (epoch ms) representing the moment when this user's `passwordResetToken` will expire (or 0 if the user currently has no such token).",
       example: 1502844074211,
-      columnName: 'password_reset_token_expires_at'
+      columnName: 'password_reset_token_expires_at',
+      allowNull: true
     },
     emailProofToken: {
       type: 'string',
@@ -83,22 +92,26 @@ module.exports = {
       type: 'string',
       description:
         'The unique ID of a user that signs in or register with their Google account.',
-      columnName: 'google_id'
+      columnName: 'google_id',
+      allowNull: true
     },
     googleAccessToken: {
       type: 'string',
       description: 'Access token provided by Google for an OAuth user.',
-      columnName: 'google_access_token'
+      columnName: 'google_access_token',
+      allowNull: true
     },
     googleIdToken: {
       type: 'string',
       description: 'The ID token provided by Google for an OAuth user.',
-      columnName: 'google_id_token'
+      columnName: 'google_id_token',
+      allowNull: true
     },
     googleAvatarUrl: {
       type: 'string',
       description: 'The picture URL provided by Google for an OAuth user.',
-      columnName: 'google_avatar_url'
+      columnName: 'google_avatar_url',
+      allowNull: true
     }
   },
   customToJSON: function () {

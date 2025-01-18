@@ -55,7 +55,7 @@
     "handle-callback-err": ["error"],
     "indent": [
       "warn",
-      2,
+      4,
       {
         "SwitchCase": 1,
         "MemberExpression": "off",

@@ -1,30 +1,77 @@
-import { Link, Head, usePage } from '@inertiajs/react'
-import AppLayout from '@/layouts/AppLayout.jsx'
+import * as React from 'react';
+import { Link, Head, usePage } from '@inertiajs/react';
+import NewAppLayout from '@/layouts/NewAppLayout.jsx';
+import { FormControl, TextField, Button, IconButton, Paper, Box } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SendIcon from '@mui/icons-material/Send';
+import { styled } from '@mui/material/styles';
+import { useForm } from '@inertiajs/react'
 
-Dashboard.layout = (page) => <AppLayout children={page} />
+Dashboard.layout = (page) => <NewAppLayout children={page} />
 export default function Dashboard() {
-  const page = usePage()
-  const loggedInUser = page.props.loggedInUser
+    const page = usePage();
+    const loggedInUser = page.props.loggedInUser;
+    const { data, setData, progress, post } = useForm({
+        url: '',
+        title: '',
+        date: '',
+        transcript: null
+    });
+    
+    const onChangeUrl = (event) => {
+        setData('url', event.target.value);
+    };
+    const onChangeTitle = (event) => {
+        setData('title', event.target.value);
+    }
+    const onChangeDate = (event) => {
+        setData('date', event.target.value);
+    }
+    const onChangeFile = (event) => {
+        setData('transcript', event.target.files[0]);
+    }
+
+    const onSubmit = (event) => {
+        event.preventDefault();
+        post('/upload');
+    };
+
 
   return (
     <>
-      <Head title="Dashboard | Mellow"></Head>
-      <section className="mx-auto max-w-4xl px-4">
-        <section className="rounded-lg bg-gradient-to-b from-brand-50/10 to-white p-6 shadow-md transition-all duration-300 hover:shadow-lg">
+      <Head title="Dashboard"></Head>
+      <Box>
+      <Paper elevation={1}>
           <h3 className="mb-2 text-xl font-semibold text-brand">
             Welcome, {loggedInUser.fullName}
           </h3>
-          <p className="mb-4 text-gray-600">
-            You are logged in as {loggedInUser.email}
-          </p>
           <Link
             href="/profile"
-            className="mt-2 rounded-lg border border-brand px-4 py-2 text-brand transition-colors duration-300 hover:bg-brand hover:text-white"
           >
             Edit Profile
           </Link>
-        </section>
-      </section>
+        </Paper>
+        <Paper elevation={1}>
+            <FormControl>
+                <TextField
+                    label='URL'
+                    onChange={onChangeUrl}
+                />
+                <TextField
+                    label='Title'
+                    onChange={onChangeTitle}
+                />
+                <TextField
+                    label='Date'
+                    onChange={onChangeDate}
+                />
+                <input type="file" onChange={onChangeFile} />
+                <IconButton onClick={onSubmit}>
+                    <SendIcon />
+                </IconButton>
+            </FormControl>
+        </Paper>
+        </Box>
     </>
   )
 }
