@@ -72,7 +72,7 @@ export default function SearchList(props) {
                         </Box>
                             {video.subtitles.map((subtitle, j) => (
                                 <ListItemButton key={j} onClick={() => handleClickSubtitle(subtitle.startTime)}>
-                                    <ListItemText primary={`${subtitle.speaker}: ${subtitle.text}`} secondary={`Timestamp: ${subtitle.timestamp}`} />
+                                    <ListItemText primary={`${subtitle.text}`} secondary={`Timestamp: ${subtitle.timestamp}`} />
                                 </ListItemButton>
                             ))}                    
                         </List>

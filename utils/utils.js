@@ -3,8 +3,12 @@ const processTSVLine = (data, id, subtitles, speakers) => {
     if (startTime === 'start' || endTime === 'end') return;
     startTime = Math.floor(Number.parseInt(startTime)/1000);
     endTime = Math.floor(Number.parseInt(endTime)/1000);
-    const speaker = speakerText.substring(speakerText.indexOf('[') + 1, speakerText.indexOf(']'));
-    const text = speakerText.substring(speakerText.indexOf(']') + 3);
+    let speaker = 'SPEAKER';
+    let text = speakerText;
+    if (speakerText.indexOf('[')>-1 && speakerText.indexOf(']')>-1) {
+        speaker = speakerText.substring(speakerText.indexOf('[') + 1, speakerText.indexOf(']'));
+        text = speakerText.substring(speakerText.indexOf(']') + 3);
+    }
     if (text === '') return;
     subtitles.push({startTime, endTime, text, speaker, owner: id});
     speakers.add(speaker);
@@ -36,8 +40,7 @@ const processRawResult = (rawResult) => {
             result[curr.url].subtitles.push({
                 startTime: curr.startTime,
                 timestamp: formatSeconds(curr.startTime),
-                text: curr.text,
-                speaker: curr.speaker
+                text: curr.text
             });
         } else {
             result[curr.url] = {
@@ -47,8 +50,7 @@ const processRawResult = (rawResult) => {
                 subtitles: [{
                     startTime: curr.startTime,
                     timestamp: formatSeconds(curr.startTime),
-                    text: curr.text,
-                    speaker: curr.speaker
+                    text: curr.text
                 }]
             }
         }
