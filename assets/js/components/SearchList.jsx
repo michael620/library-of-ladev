@@ -1,6 +1,7 @@
 import * as React from 'react';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Collapse from '@mui/material/Collapse';
@@ -10,7 +11,7 @@ import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import YouTube from 'react-youtube';
 import ErrorIcon from '@mui/icons-material/Error';
 
@@ -40,6 +41,24 @@ export default function SearchList(props) {
         player.current = event.target;
     }
 
+    const renderSearchResult = (video) => {
+        if (video.subtitles) {
+            return video.subtitles.map((subtitle, j) => (
+                <ListItemButton key={j} onClick={() => handleClickSubtitle(subtitle.startTime)}>
+                    <ListItemText primary={`${subtitle.text}`} secondary={`Timestamp: ${subtitle.timestamp}`} />
+                </ListItemButton>
+            ))
+        } else if (video.matches) {
+            return video.matches.map((match, j) => (
+                <ListItem key={j}>
+                    <ListItemText primary={<Typography dangerouslySetInnerHTML={{ __html: `<p>${match.text}</p>` }}></Typography>} />
+                </ListItem>
+            ))
+        } else {
+            return '';
+        }
+    }
+
     const messageIcon = props.searchResult.message ? <Tooltip title={props.searchResult.message}><ErrorIcon sx={{margin:1}}/></Tooltip> : '';
 
     return (
@@ -55,13 +74,14 @@ export default function SearchList(props) {
         >
             {Object.keys(props.searchResult.results).map((url, i) => {
                 const video = props.searchResult.results[url];
+                const matches = video.subtitles ? video.subtitles.length : video.matches.length;
                 return (
                     <Box key={i}>
                     <ListItemButton onClick={() => handleClick(i)}>
                         <ListItemAvatar>
                             <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${video.url}/default.jpg`} />
                         </ListItemAvatar>
-                        <ListItemText primary={`${video.title} - ${video.date}`} secondary={`${video.subtitles.length} matches`} />
+                        <ListItemText primary={`${video.title} - ${video.date}`} secondary={`${matches} matches`} />
                         {open===i ? <ExpandLess /> : <ExpandMore />}
                     </ListItemButton>
                     <Collapse in={open===i} timeout="auto" unmountOnExit>
@@ -70,11 +90,7 @@ export default function SearchList(props) {
                         <Box sx={{padding: '1rem'}}>
                             <YouTube videoId={video.url} opts={opts} onReady={_onReady}/>
                         </Box>
-                            {video.subtitles.map((subtitle, j) => (
-                                <ListItemButton key={j} onClick={() => handleClickSubtitle(subtitle.startTime)}>
-                                    <ListItemText primary={`${subtitle.text}`} secondary={`Timestamp: ${subtitle.timestamp}`} />
-                                </ListItemButton>
-                            ))}                    
+                            {renderSearchResult(video)}
                         </List>
                         </Paper>
                     </Collapse>

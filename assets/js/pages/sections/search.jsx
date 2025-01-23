@@ -16,8 +16,7 @@ export default function Search(props) {
         isLoading={isLoading}
         setIsLoading={setIsLoading}
         queryText={props.queryText}
-        fullWidth={true}
-        showSubmitButton={true}
+        variant='full'
     />
     {isLoading ? <LinearProgress /> : props.searchResult &&
     <Paper elevation={1}>

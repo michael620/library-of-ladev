@@ -11,6 +11,7 @@ import IconButton from '@mui/material/IconButton';
 import { Link as InertiaLink, router } from '@inertiajs/react'
 import SearchBar from '@/components/SearchBar';
 import Link from '@mui/material/Link';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Card, CardContent } from '@mui/material';
 
 const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 
@@ -20,6 +21,7 @@ export default function NewAppLayout({ children }) {
     const [isDarkMode, setIsDarkMode] = React.useState(
         prefersDarkMode ? true : false
     );
+    const [aboutDialogOpen, setAboutDialogOpen] = React.useState(false);
     const theme = React.useMemo(() =>
         createTheme({
             palette: {
@@ -30,6 +32,33 @@ export default function NewAppLayout({ children }) {
     const onClickHome = (e) => {
         e.preventDefault();
         router.visit('/');
+    };
+
+    const handleAboutDialogOpen = (value) => {
+        setAboutDialogOpen(value);
+    };
+
+    const renderAboutDialog = () => {
+        return (<>
+        <Typography component={InertiaLink} variant='caption' onClick={() => handleAboutDialogOpen(true)}>About</Typography>
+        <Dialog
+            open={aboutDialogOpen}
+            onClose={() => handleAboutDialogOpen(false)}
+            maxWidth="md"
+            fullWidth
+        >
+            <DialogTitle>About</DialogTitle>
+            <DialogContent>
+                <Typography gutterBottom variant="body1">
+                    This is a fan-made project and is not affiliated with Neuro-sama or Vedal.
+                </Typography>
+                <Typography variant='body1'>You can follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link></Typography>
+            </DialogContent>
+            <DialogActions>
+            <Button onClick={() => handleAboutDialogOpen(false)}>Close</Button>
+            </DialogActions>
+        </Dialog>
+        </>);
     };
 
     return (
@@ -48,9 +77,6 @@ export default function NewAppLayout({ children }) {
                 isLoading={false}
                 setIsLoading={() => {}}
                 queryText=''
-                fullWidth={false}
-                size='small'
-                showSubmitButton={false}
             /></Box> : ''}
             </Toolbar>
         </AppBar>
@@ -65,6 +91,7 @@ export default function NewAppLayout({ children }) {
                     <Typography fontWeight='bold' variant='caption'>Links</Typography>
                     <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
                     <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
+                    {renderAboutDialog()}
                 </Box>
                 <Box textAlign='right' display='flex' flexDirection='column'>
                     <Typography fontWeight='bold' variant='caption'>Special Thanks</Typography>

@@ -1,21 +1,21 @@
 import * as React from 'react';
 import { Link, Head, usePage } from '@inertiajs/react';
 import NewAppLayout from '@/layouts/NewAppLayout.jsx';
-import { FormControl, TextField, Button, IconButton, Paper, Box } from '@mui/material';
+import { FormControl, TextField, Button, IconButton, Paper, Box, Typography } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SendIcon from '@mui/icons-material/Send';
-import { styled } from '@mui/material/styles';
-import { useForm } from '@inertiajs/react'
+import { useForm } from '@inertiajs/react';
+import useFormWithUploads from '@/hooks/useFormWithUploads.js';
 
 Dashboard.layout = (page) => <NewAppLayout children={page} />
 export default function Dashboard() {
     const page = usePage();
     const loggedInUser = page.props.loggedInUser;
-    const { data, setData, progress, post } = useForm({
+    const { data, setData, progress, post } = useFormWithUploads({
         url: '',
         title: '',
         date: '',
-        transcript: null
+        transcript_files: null
     });
     
     const onChangeUrl = (event) => {
@@ -28,7 +28,7 @@ export default function Dashboard() {
         setData('date', event.target.value);
     }
     const onChangeFile = (event) => {
-        setData('transcript', event.target.files[0]);
+        setData('transcript_files', [...event.target.files]);
     }
 
     const onSubmit = (event) => {
@@ -53,6 +53,7 @@ export default function Dashboard() {
         </Paper>
         <Paper elevation={1}>
             <FormControl>
+            <Typography variant="h6">Upload Video</Typography>
                 <TextField
                     label='URL'
                     onChange={onChangeUrl}
@@ -66,6 +67,13 @@ export default function Dashboard() {
                     onChange={onChangeDate}
                 />
                 <input type="file" onChange={onChangeFile} />
+                <IconButton onClick={onSubmit}>
+                    <SendIcon />
+                </IconButton>
+            </FormControl>
+            <FormControl>
+                <Typography variant="h6">Upload Transcripts</Typography>
+                <input type="file" multiple onChange={onChangeFile} />
                 <IconButton onClick={onSubmit}>
                     <SendIcon />
                 </IconButton>
