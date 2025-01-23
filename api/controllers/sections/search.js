@@ -49,10 +49,13 @@ module.exports = {
                 text,
                 to_tsquery('english', $1),
                 'MinWords=25, MaxWords=50, MaxFragments=3, FragmentDelimiter=" || "'
-                ) AS snippets, video.url, video.title, video.date
+                ) AS snippets,
+                ts_rank(to_tsvector('english', text), to_tsquery('english', $1)) AS rank,
+                video.url, video.title, video.date
                 FROM transcript
                 JOIN video ON transcript.owner = video.id
                 WHERE search_vector @@ to_tsquery($1)
+                ORDER BY rank DESC
                 LIMIT $2;`;
                 const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${sanitizedText}%`, `${MAX_ROW_LIMIT_FTS+1}`]);
                 searchResult = processRawResultFTS(rawResult);

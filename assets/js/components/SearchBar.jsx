@@ -94,7 +94,7 @@ export default function SearchBar(props) {
                         <b>With Full Text Search off</b>: a case-insensitive query on exactly what you typed, includes punctuations.<br/>
                         <b>Results</b>: Matched sentences along with its timestamp.<br/><br/>
                         <b>With Full Text Search on</b>: looks for matches from the entire video transcript (alphanumeric input only)<br/>
-                        <b>Results</b>: Matched snippets, no timestamp.<br/><br/>
+                        <b>Results</b>: Matched snippets, no timestamp. Ordered by relevance.<br/><br/>
                         <b>Tip</b>: You can use Full Text Search first, then use the result to search for the exact sentence with Full Text Search off to locate the timestamp.
                     </Typography>
                 </CardContent>
