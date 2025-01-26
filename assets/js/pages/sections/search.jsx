@@ -15,14 +15,18 @@ export default function Search(props) {
     <SearchBar
         isLoading={isLoading}
         setIsLoading={setIsLoading}
-        queryText={props.queryText}
+        text={props.text}
+        isFullTextSearch={props.isFullTextSearch}
+        title={props.title}
+        startDate={props.startDate}
+        endDate={props.endDate}
         variant='full'
     />
     {isLoading ? <LinearProgress /> : props.searchResult &&
     <Paper elevation={1}>
         <SearchList
             searchResult={props.searchResult}
-            queryText={props.queryText}
+            text={props.text}
         />
     </Paper>
     }

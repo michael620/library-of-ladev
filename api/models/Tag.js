@@ -6,8 +6,9 @@ module.exports = {
             unique: true
         },
         // association
-        owner: {
-            model: 'tagmap'
+        owners: {
+            collection: 'tagmap',
+            via: 'tags'
         }
     }
 }

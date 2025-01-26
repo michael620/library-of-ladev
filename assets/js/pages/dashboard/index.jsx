@@ -12,21 +12,8 @@ export default function Dashboard() {
     const page = usePage();
     const loggedInUser = page.props.loggedInUser;
     const { data, setData, progress, post } = useFormWithUploads({
-        url: '',
-        title: '',
-        date: '',
         transcript_files: null
     });
-    
-    const onChangeUrl = (event) => {
-        setData('url', event.target.value);
-    };
-    const onChangeTitle = (event) => {
-        setData('title', event.target.value);
-    }
-    const onChangeDate = (event) => {
-        setData('date', event.target.value);
-    }
     const onChangeFile = (event) => {
         setData('transcript_files', [...event.target.files]);
     }
@@ -35,7 +22,6 @@ export default function Dashboard() {
         event.preventDefault();
         post('/upload');
     };
-
 
   return (
     <>
@@ -53,26 +39,7 @@ export default function Dashboard() {
         </Paper>
         <Paper elevation={1}>
             <FormControl>
-            <Typography variant="h6">Upload Video</Typography>
-                <TextField
-                    label='URL'
-                    onChange={onChangeUrl}
-                />
-                <TextField
-                    label='Title'
-                    onChange={onChangeTitle}
-                />
-                <TextField
-                    label='Date'
-                    onChange={onChangeDate}
-                />
-                <input type="file" onChange={onChangeFile} />
-                <IconButton onClick={onSubmit}>
-                    <SendIcon />
-                </IconButton>
-            </FormControl>
-            <FormControl>
-                <Typography variant="h6">Upload Transcripts</Typography>
+                <Typography variant="h6">Upload</Typography>
                 <input type="file" multiple onChange={onChangeFile} />
                 <IconButton onClick={onSubmit}>
                     <SendIcon />

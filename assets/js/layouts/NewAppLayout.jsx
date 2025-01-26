@@ -12,6 +12,8 @@ import { Link as InertiaLink, router } from '@inertiajs/react'
 import SearchBar from '@/components/SearchBar';
 import Link from '@mui/material/Link';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Card, CardContent } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 
@@ -62,6 +64,7 @@ export default function NewAppLayout({ children }) {
     };
 
     return (
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
         <ThemeProvider theme={theme}>
         <Box padding='1rem' display='flex' flexDirection='column' minHeight='100vh'>
         <CssBaseline />
@@ -76,7 +79,6 @@ export default function NewAppLayout({ children }) {
             {!currentPath?.startsWith('/search') ? <Box marginLeft='auto'><SearchBar
                 isLoading={false}
                 setIsLoading={() => {}}
-                queryText=''
             /></Box> : ''}
             </Toolbar>
         </AppBar>
@@ -103,5 +105,6 @@ export default function NewAppLayout({ children }) {
         </Box>
         </Box>
         </ThemeProvider>
+        </LocalizationProvider>
     );
 }

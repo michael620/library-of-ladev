@@ -6,7 +6,7 @@ module.exports = {
         },
         tags: {
             collection: 'tag',
-            via: 'owner'
+            via: 'owners'
         }
     }
 }

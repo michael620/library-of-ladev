@@ -17,7 +17,7 @@ const processTSVLine = (data, id, subtitles, speakers) => {
     speakers.add(speaker);
 };
 
-const onCloseTSV = async (fd, subtitles, speakers) => {
+const onCloseTSV = async (fd, subtitles, speakers, resolve) => {
     if (subtitles.length !== 0) {
         //split subtitles into chunks of 1000
         const chunks = [];
@@ -32,7 +32,38 @@ const onCloseTSV = async (fd, subtitles, speakers) => {
             await Tag.findOrCreate({ name: speaker }, { name: speaker });
         }
     }
-    await sails.rm(fd);
+    resolve();
+};
+
+const createVideoAndSubtitle = async (fd, url, title, date) => {
+    const { createInterface } = require('readline');
+    const { createReadStream } = require('fs');
+    const video = await Video.findOrCreate({ url }, { url, title, date });
+    await Tagmap.findOrCreate({ owner: video.id }, { owner: video.id });
+    return new Promise(function(resolve,reject){
+        const subtitles = [];
+        const speakers = new Set();
+        createInterface({input: createReadStream(fd)})
+        .on('line', (data) => processTSVLine(data, video.id, subtitles, speakers))
+        .on('close', () => onCloseTSV(fd, subtitles, speakers, resolve));
+    });
+};
+
+const buildVideoMetadata = async (fd, subtitles, speakers) => {
+    const { createInterface } = require('readline');
+    const { createReadStream } = require('fs');
+    return new Promise(function(resolve,reject){
+        const metadata = {};
+        createInterface({input: createReadStream(fd)})
+            .on('line', (data) => {
+                const [url, date, title] = data.split('\t');
+                if (url === 'url') return;
+                metadata[url] = { date, title };
+            })
+            .on('close', () => {
+                resolve(metadata);
+            });
+    });
 };
 
 const formatSeconds = (seconds) => {
@@ -113,5 +144,7 @@ module.exports = {
     onCloseTSV,
     formatSeconds,
     processRawResult,
-    processRawResultFTS
+    processRawResultFTS,
+    createVideoAndSubtitle,
+    buildVideoMetadata
 };
