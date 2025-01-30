@@ -97,7 +97,7 @@ export default function NewAppLayout({ children }) {
                 </Box>
                 <Box textAlign='right' display='flex' flexDirection='column'>
                     <Typography fontWeight='bold' variant='caption'>Special Thanks</Typography>
-                    <Typography variant='caption'>YouTube VODs from <Link href="https://www.youtube.com/@Neuro-samaVods">Neuro-sama Official Vods</Link> and <Link href="https://www.youtube.com/@NArchiver">Neuro Archiver</Link></Typography>
+                    <Typography variant='caption'>YouTube VODs from <Link target="_blank" href="https://www.youtube.com/@Neuro-samaVods">Neuro-sama Official Vods</Link> and <Link target="_blank" href="https://www.youtube.com/@NArchiver">Neuro Archiver</Link></Typography>
                     <Typography variant='caption'>Inspired by a librarian and a Minecraft mob</Typography>
                     <Typography variant='caption'><Link href="mailto:libraryofladev@gmail.com">Contact</Link></Typography>
                 </Box>

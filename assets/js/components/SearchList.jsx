@@ -86,14 +86,10 @@ export default function SearchList(props) {
     return (
         <List
             sx={{ width: '100%', bgcolor: 'background.paper' }}
-            component="nav"
-            aria-labelledby="nested-list-subheader"
-            subheader={
-                props.text ? <><ListSubheader component="div" id="nested-list-subheader">
-                {messageIcon}{`Found ${messageIcon ? 'more than ' : ''}${props.searchResult.rows} result${props.searchResult.rows > 1 ? 's' : ''} in ${Object.keys(props.searchResult.results).length} video${Object.keys(props.searchResult.results).length > 1 ? 's' : ''} for "${props.text}"`}
-            </ListSubheader></> : ''
-            }
         >
+            {props.text ? <><ListSubheader component="div" id="nested-list-subheader" sx={{zIndex: 0}}>
+                {messageIcon}{`Found ${messageIcon ? 'more than ' : ''}${props.searchResult.rows} result${props.searchResult.rows > 1 ? 's' : ''} in ${Object.keys(props.searchResult.results).length} video${Object.keys(props.searchResult.results).length > 1 ? 's' : ''} for "${props.text}"`}
+            </ListSubheader></> : ''}
             {Object.keys(props.searchResult.results).map((url, i) => {
                 const video = props.searchResult.results[url];
                 const matches = video.subtitles ? video.subtitles.length : video.matches.length;

@@ -13,7 +13,7 @@ export default function Index() {
         <Typography align='center' variant='h3'>Library of Ladev</Typography>
         <Card sx={{ minWidth: 275 }, {margin: 2}}>
         <CardContent>
-            <Typography align='center' sx={{marginBottom:2}}>An archive of stream VOD transcripts from the Twitch channel <Link href="https://www.twitch.tv/vedal987">vedal987</Link></Typography>
+            <Typography align='center' sx={{marginBottom:2}}>An archive of stream VOD transcripts from the Twitch channel <Link target="_blank" href="https://www.twitch.tv/vedal987">vedal987</Link></Typography>
             <Typography align='center' variant='h6'>Some example searches:</Typography>
             <Stack sx={{marginTop: 1}} direction="column" spacing={1}>
             <Link align='center' component={InertiaLink} href="/search?text=meow%20meow%20lol">meow meow lol</Link>

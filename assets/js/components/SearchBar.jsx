@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { styled } from '@mui/material/styles';
 import FormControl from '@mui/material/FormControl';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
@@ -16,14 +15,6 @@ import dayjs from 'dayjs';
 
 const minDate = dayjs('2022-12-19');
 
-const DialogPopper = styled(Popper)(({ theme }) => ({
-    zIndex: theme.zIndex.modal,
-    [theme.breakpoints.down('sm')]: {
-        maxHeight:'30vh',
-        overflow:'auto'
-    }
-}));
-
 export default function SearchBar(props) {
     const { isLoading, setIsLoading } = props;
     const showFullSearchBar = props.variant === 'full';
@@ -33,28 +24,18 @@ export default function SearchBar(props) {
     const [startDate, setStartDate] = React.useState(props.startDate ? dayjs(props.startDate) : undefined);
     const [endDate, setEndDate] = React.useState(props.endDate ? dayjs(props.endDate) : undefined);
     const [disabled, setDisabled] = React.useState(false);
-    const [open, setOpen] = React.useState(false);
+    const [isHelpDialogOpen, setIsHelpDialogOpen] = React.useState(false);
     const [anchorEl, setAnchorEl] = React.useState(null);
 
-    const handleClickHelp = (event) => {
+    const toggleAdvancedSearch = (event) => {
         setAnchorEl(anchorEl ? null : event.currentTarget);
     };
-    const handleCloseHelp = () => {
-        setAnchorEl(null);
+    const toggleHelpDialog = () => {
+        setIsHelpDialogOpen(!isHelpDialogOpen);
     };
   
-    const isHelpPopperOpen = Boolean(anchorEl);
-    const id = isHelpPopperOpen ? 'simple-popper' : undefined;
+    const isAdvancedSearchOpen = Boolean(anchorEl);
 
-    const handleOpen = (value) => {
-        setOpen(value);
-        if (!value) {
-            handleCloseHelp();
-        }
-        if (disabled) {
-            handleReset();
-        }
-    };
     const handleReset = () => {
         setIsFullTextSearch(false);
         setTitle('');
@@ -78,7 +59,12 @@ export default function SearchBar(props) {
 
     const onSubmit = async (event) => {
         event.preventDefault();
+        if (disabled) {
+            return;
+        }
+        setIsHelpDialogOpen(false);
         setIsLoading(true);
+        setAnchorEl(null);
         const startDateString = startDate?.format('YYYY-MM-DD');
         const endDateString = endDate?.format('YYYY-MM-DD');
         router.visit('/search', {
@@ -92,16 +78,16 @@ export default function SearchBar(props) {
         }
         return (<>
         <Box display='flex' flexDirection='row' justifyContent='end'>
-            <Button variant="text" size="small" onClick={() => handleOpen(true)} endIcon={<TuneIcon />}>Advanced Search</Button>
+            <Button variant="text" size="small" onClick={toggleAdvancedSearch} endIcon={<TuneIcon />}>Advanced Search</Button>
         </Box>
-        <Dialog
-            open={open}
-            onClose={() => handleOpen(false)}
-            maxWidth="md"
-            fullWidth
-        >
-            <DialogTitle>Advanced Search</DialogTitle>
-            <DialogContent>
+        <Popper id={isAdvancedSearchOpen ? 'advanced-search-popper' : undefined} open={isAdvancedSearchOpen} anchorEl={anchorEl} placement='bottom-end'>
+            <Card>
+            <CardActions sx={{ justifyContent: 'end' }}>
+                <IconButton onClick={toggleHelpDialog}>
+                    <HelpIcon />
+                </IconButton>
+            </CardActions>
+            <CardContent>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:1}}>
             <Box display='flex' flexDirection='row' justifyContent='start'>
                 <FormControlLabel
@@ -110,9 +96,6 @@ export default function SearchBar(props) {
                     label={'Full Text Search'}
                     onChange={onChangeFullTextSearch}
                 />
-                <IconButton onClick={handleClickHelp}>
-                    <HelpIcon />
-                </IconButton>
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='end' sx={{gap:2}}>
                 <Typography>Title:</Typography>
@@ -143,34 +126,45 @@ export default function SearchBar(props) {
                 />
             </Box>
             </Box>
-            </DialogContent>
-            <DialogActions>
-            <Button onClick={handleReset}>Reset</Button>
-            <Button disabled={disabled} onClick={() => handleOpen(false)}>Ok</Button>
-            </DialogActions>
-        </Dialog>
-        <DialogPopper id={id} open={isHelpPopperOpen} anchorEl={anchorEl}>
-            <Card>
-            <CardContent>
-                <Typography gutterBottom variant='h5'>
-                What is this?
-                </Typography>
-                <Typography variant="body1">
-                    <b>With Full Text Search off</b>: a case-insensitive query on exactly what you typed, includes punctuations.<br/>
-                    <b>Results</b>: Matched sentences along with its timestamp.<br/><br/>
-                    <b>With Full Text Search on</b>: looks for matches from the entire video transcript (alphanumeric input only)<br/>
-                    <b>Results</b>: Matched snippets, no timestamp. Ordered by relevance.<br/><br/>
-                    <b>Tip</b>: You can use Full Text Search first, then use the result to search for the exact sentence with Full Text Search off to locate the timestamp.
-                </Typography>
             </CardContent>
-            <CardActions sx={{ justifyContent: 'space-between' }}>
-                <Typography variant="body2">
-                    More advanced options coming soon!
-                </Typography>
-                <Button size="small" onClick={handleCloseHelp}>Close</Button>
+            <CardActions sx={{ justifyContent: 'end' }}>
+                <Button onClick={handleReset}>Reset</Button>
+                <Button disabled={disabled} onClick={() => setAnchorEl(null)}>Ok</Button>
             </CardActions>
             </Card>
-        </DialogPopper>
+        </Popper>
+        <Dialog
+            open={isHelpDialogOpen}
+            onClose={toggleHelpDialog}
+            maxWidth="md"
+            fullWidth
+        >
+            <DialogTitle><Typography variant='h5'>Help</Typography></DialogTitle>
+            <DialogContent>
+                <Typography variant="h6">Default search</Typography>
+                <Typography variant="body1">
+                    Matches exactly what you type.<br/>
+                    <b>Results</b>: Matched sentences along with its timestamp.<br/>
+                    <b>Note</b>: Since timestamps are split by individual sentences, it is not possible to search across multiple sentences.<br/><br/>
+                </Typography>
+                <Typography variant="h6">Full Text Search</Typography>
+                <Typography variant="body1">
+                    Search from the entire video transcript, with syntax support.<br/>
+                    <b>Results</b>: Matched snippets, no timestamp.<br/>
+                    <b>Tip</b>: You can use Full Text Search first, then search again once you find the exact sentence with Full Text Search off to locate the timestamp.<br/><br/>
+                </Typography>
+                <Typography variant="h6">Search syntax</Typography>
+                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>"quoted text"</b></Typography>
+                <Typography display='inline' variant="body1">: Matches the exact phrase<br/></Typography>
+                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>or</b></Typography>
+                <Typography display='inline' variant="body1">: Matches x or y<br/></Typography>
+                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>-</b></Typography>
+                <Typography display='inline' variant="body1">: Exclude words from your search<br/></Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button size="small" onClick={toggleHelpDialog}>Close</Button>
+            </DialogActions>
+        </Dialog>
         </>);
     };
     
@@ -193,7 +187,7 @@ export default function SearchBar(props) {
                 }
             }}
         />
-        {showFullSearchBar ? <IconButton onClick={onSubmit} disabled={isLoading}>
+        {showFullSearchBar ? <IconButton onClick={onSubmit} disabled={disabled || isLoading}>
             <SendIcon />
         </IconButton> : ''}
     </FormControl>
