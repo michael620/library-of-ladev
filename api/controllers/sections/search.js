@@ -33,7 +33,6 @@ module.exports = {
       }
     },
   
-    // receives data from subtitle.jsx
     fn: async function ({text, isFullTextSearch, title, startDate, endDate }) {
         const props = {
             searchResult: {
@@ -63,7 +62,7 @@ module.exports = {
                 FROM transcript
                 JOIN video ON transcript.owner = video.id
                 WHERE search_vector @@ websearch_to_tsquery($1)
-                AND (video.title ILIKE $3 OR COALESCE($3, '') = '')
+                AND (video.title ILIKE $3 OR COALESCE(NULLIF($3, ''), '') = '')
                 AND (
                     (video.date BETWEEN NULLIF($4, '') AND NULLIF($5, ''))
                     OR (NULLIF($4, '') IS NOT NULL AND NULLIF($5, '') IS NULL AND video.date >= NULLIF($4, ''))
@@ -72,7 +71,7 @@ module.exports = {
                 )
                 ORDER BY rank DESC
                 LIMIT $2;`;
-                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`${text}`, `${MAX_ROW_LIMIT_FTS+1}`, `%${title}%`, startDate, endDate]);
+                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`${text}`, `${MAX_ROW_LIMIT_FTS+1}`, (title ? `%${title}%` : null), startDate, endDate]);
                 props.searchResult = processRawResultFTS(rawResult);
             } else {
                 const RAW_SQL = `
@@ -80,7 +79,7 @@ module.exports = {
                 FROM subtitle
                 JOIN video ON subtitle.owner = video.id
                 WHERE subtitle.text ILIKE $1
-                AND (video.title ILIKE $3 OR COALESCE($3, '') = '')
+                AND (video.title ILIKE $3 OR COALESCE(NULLIF($3, ''), '') = '')
                 AND (
                     (video.date BETWEEN NULLIF($4, '') AND NULLIF($5, ''))
                     OR (NULLIF($4, '') IS NOT NULL AND NULLIF($5, '') IS NULL AND video.date >= NULLIF($4, ''))
@@ -89,7 +88,7 @@ module.exports = {
                 )
                 ORDER BY video.date DESC, subtitle.owner, subtitle."startTime"
                 LIMIT $2;`;
-                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${text}%`, `${MAX_ROW_LIMIT+1}`, `%${title}%`, startDate, endDate]);
+                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${text}%`, `${MAX_ROW_LIMIT+1}`, (title ? `%${title}%` : null), startDate, endDate]);
                 props.searchResult = processRawResult(rawResult);
             }
         }
