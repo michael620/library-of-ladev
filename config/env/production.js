@@ -201,7 +201,7 @@ module.exports = {
      *                                                                          *
      ***************************************************************************/
     onlyAllowOrigins: [
-      'http://localhost:1337',
+    //   'http://localhost:1337',
       `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`,
     ]
     // beforeConnect: function(handshake, proceed) {
