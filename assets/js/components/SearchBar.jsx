@@ -1,28 +1,23 @@
 import * as React from 'react';
-import FormControl from '@mui/material/FormControl';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
-import SendIcon from '@mui/icons-material/Send';
-import SearchIcon from '@mui/icons-material/Search';
 import HelpIcon from '@mui/icons-material/Help';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { router } from '@inertiajs/react';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Popper, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, FormControlLabel, Typography, Card, CardContent, CardActions } from '@mui/material';
-import { InputAdornment } from '@mui/material';
 import { DateField } from '@mui/x-date-pickers/DateField';
+import SearchBarBase from '@/components/SearchBarBase.jsx';
 import dayjs from 'dayjs';
 
 const minDate = dayjs('2022-12-19');
 
 export default function SearchBar(props) {
-    const { isLoading, setIsLoading } = props;
-    const showFullSearchBar = props.variant === 'full';
-    const [text, setText] = React.useState(props.text || '');
-    const [isFullTextSearch, setIsFullTextSearch] = React.useState(props.isFullTextSearch || false);
-    const [title, setTitle] = React.useState(props.title || '');
-    const [startDate, setStartDate] = React.useState(props.startDate ? dayjs(props.startDate) : undefined);
-    const [endDate, setEndDate] = React.useState(props.endDate ? dayjs(props.endDate) : undefined);
+    const { isLoading, setIsLoading, showFullSearchBar } = props;
+    const [isFullTextSearch, setIsFullTextSearch] = React.useState(props.searchParams?.isFullTextSearch || false);
+    const [title, setTitle] = React.useState(props.searchParams?.title || '');
+    const [startDate, setStartDate] = React.useState(props.searchParams?.startDate ? dayjs(props.startDate) : undefined);
+    const [endDate, setEndDate] = React.useState(props.searchParams?.endDate ? dayjs(props.endDate) : undefined);
     const [disabled, setDisabled] = React.useState(false);
     const [isHelpDialogOpen, setIsHelpDialogOpen] = React.useState(false);
     const [anchorEl, setAnchorEl] = React.useState(null);
@@ -42,9 +37,6 @@ export default function SearchBar(props) {
         setStartDate(undefined);
         setEndDate(undefined);
     };
-    const onChangeText = (event) => {
-        setText(event?.target?.value);
-    };
     const onChangeTitle = (event) => {
         setTitle(event?.target?.value);
     };
@@ -57,18 +49,28 @@ export default function SearchBar(props) {
         }
     }
 
-    const onSubmit = async (event) => {
-        event.preventDefault();
+    const onSubmit = async (text) => {
         if (disabled) {
             return;
         }
         setIsHelpDialogOpen(false);
         setIsLoading(true);
         setAnchorEl(null);
-        const startDateString = startDate?.format('YYYY-MM-DD');
-        const endDateString = endDate?.format('YYYY-MM-DD');
+        const data = { text };
+        if (isFullTextSearch) {
+            data.isFullTextSearch = isFullTextSearch;
+        }
+        if (title) {
+            data.title = title;
+        }
+        if (startDate) {
+            data.startDate = startDate.format('YYYY-MM-DD');
+        }
+        if (endDate) {
+            data.endDate = endDate.format('YYYY-MM-DD');
+        }
         router.visit('/search', {
-            data: { text, isFullTextSearch, title, startDate: startDateString, endDate: endDateString }
+            data
         });
     };
 
@@ -145,12 +147,13 @@ export default function SearchBar(props) {
                 <Typography variant="body1">
                     Matches exactly what you type.<br/>
                     <b>Results</b>: Matched sentences along with its timestamp.<br/>
-                    <b>Note</b>: Since timestamps are split by individual sentences, it is not possible to search across multiple sentences.<br/><br/>
+                    <b>Note</b>: Since timestamps are split by sentences, you may not find a phrase if it spans across multiple sentences.<br/><br/>
                 </Typography>
                 <Typography variant="h6">Full Text Search</Typography>
                 <Typography variant="body1">
                     Search from the entire video transcript, with syntax support.<br/>
                     <b>Results</b>: Matched snippets, no timestamp.<br/>
+                    <b>Note</b>: Snippets attempt to highlight matched search terms, which doesn't work well if they match across a large context window.<br/>
                     <b>Tip</b>: You can use Full Text Search first, then search again once you find the exact sentence with Full Text Search off to locate the timestamp.<br/><br/>
                 </Typography>
                 <Typography variant="h6">Search syntax</Typography>
@@ -169,28 +172,13 @@ export default function SearchBar(props) {
     };
     
     return (<>
-    <FormControl fullWidth={showFullSearchBar} style={{flexDirection: 'row'}}>
-        <TextField
-            variant="outlined"
-            fullWidth={showFullSearchBar}
-            size={showFullSearchBar ? 'medium' : 'small'}
-            onChange={onChangeText}
-            onKeyDown={onKeyDown}
-            disabled={isLoading}
-            value={text}
-            slotProps={{
-                input: {
-                startAdornment: (
-                <InputAdornment position="start">
-                    <SearchIcon />
-                </InputAdornment>)
-                }
-            }}
-        />
-        {showFullSearchBar ? <IconButton onClick={onSubmit} disabled={disabled || isLoading}>
-            <SendIcon />
-        </IconButton> : ''}
-    </FormControl>
+    <SearchBarBase
+        showFullSearchBar={true}
+        onSubmit={onSubmit}
+        disabled={disabled}
+        text={props.searchParams?.text}
+        isLoading={isLoading}
+    />
     {renderAdvancedSearch()}
     </>);
 }

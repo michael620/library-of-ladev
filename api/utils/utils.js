@@ -74,69 +74,44 @@ const formatSeconds = (seconds) => {
 }
 
 const processRawResult = (rawResult) => {
-    const { MAX_ROW_LIMIT } = require('./constants');
-    const results = rawResult.rows.reduce((result, curr, i) => {
-        if (i >= MAX_ROW_LIMIT) {
-            return result;
-        }
-        if (result[curr.url]) {
-            result[curr.url].subtitles.push({
-                startTime: curr.startTime,
-                timestamp: formatSeconds(curr.startTime),
-                text: curr.text
-            });
-        } else {
-            result[curr.url] = {
-                url: curr.url,
-                title: curr.title,
-                date: curr.date,
-                subtitles: [{
-                    startTime: curr.startTime,
-                    timestamp: formatSeconds(curr.startTime),
-                    text: curr.text
-                }]
-            }
-        }
-        return result;
-    }, {});
-    const message = rawResult.rows.length > MAX_ROW_LIMIT ? `More than ${MAX_ROW_LIMIT} results found. Only displaying the first ${MAX_ROW_LIMIT}. Try a more specific search.` : '';
-    return {
-        results,
-        rows: rawResult.rows.length > MAX_ROW_LIMIT ? MAX_ROW_LIMIT : rawResult.rows.length,
-        message
-    };
+    const map = new Map();
+    for (const row of rawResult.rows) {
+        const entry = map.get(row.url) || {
+            url: row.url,
+            title: row.title,
+            date: row.date,
+            total: row.total_count,
+            subtitles: []
+        };
+        entry.subtitles.push({
+            startTime: row.startTime,
+            timestamp: formatSeconds(row.startTime),
+            text: row.text
+        });
+        map.set(row.url, entry);
+    }
+    const results = Array.from(map.values());
+    return results;
 }
 
 const processRawResultFTS = (rawResult) => {
-    const { MAX_ROW_LIMIT_FTS } = require('./constants');
-    let rows = 0;
-    const results = rawResult.rows.reduce((result, curr, i) => {
-        if (i >= MAX_ROW_LIMIT_FTS) {
-            return result;
-        }
-        const matches = curr.snippets.split(' || ').map((snippet) => {
+    const map = new Map();
+    for (const row of rawResult.rows) {
+        const { url, title, date } = row;
+        const matches = row.snippets.split(' || ').map((snippet) => {
             return { text: snippet };
         });
-        rows += matches.length;
-        if (result[curr.url]) {
-            result[curr.url].matches.push(...matches);
-        } else {
-            const { url, title, date } = curr;
-            result[curr.url] = {
-                url,
-                title,
-                date,
-                matches
-            }
-        }
-        return result;
-    }, {});
-    const message = rawResult.rows.length > MAX_ROW_LIMIT_FTS ? `More than ${rows} results found in ${MAX_ROW_LIMIT_FTS} videos. Only displaying results from the first ${MAX_ROW_LIMIT_FTS} videos. Try a more specific search.` : '';
-    return {
-        results,
-        rows,
-        message
-    };
+        const entry = map.get(row.url) || {
+            url,
+            title,
+            date,
+            matches: []
+        };
+        entry.matches.push(...matches);
+        map.set(row.url, entry);
+    }
+    const results = Array.from(map.values());
+    return results;
 }
 
 module.exports = {

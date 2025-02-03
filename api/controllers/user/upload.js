@@ -23,7 +23,7 @@ module.exports = {
     fn: async function ({transcript_files}) {
         const { createInterface } = require('readline');
         const { createReadStream, readFileSync } = require('fs');
-        const { createVideoAndSubtitle, buildVideoMetadata } = require('../../../utils/utils');
+        const { createVideoAndSubtitle, buildVideoMetadata } = require('../../utils/utils');
         const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);
         const video_metadata_file = uploadedFiles.find((e) => e.filename === 'video_metadata.tsv');

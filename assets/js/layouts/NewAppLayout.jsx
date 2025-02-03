@@ -8,17 +8,20 @@ import Typography from '@mui/material/Typography';
 import AppBar from '@mui/material/AppBar';
 import HomeIcon from '@mui/icons-material/Home';
 import IconButton from '@mui/material/IconButton';
-import { Link as InertiaLink, router } from '@inertiajs/react'
+import { Link as InertiaLink, router, usePage } from '@inertiajs/react'
 import SearchBar from '@/components/SearchBar';
 import Link from '@mui/material/Link';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Card, CardContent } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import SearchBarBase from '@/components/SearchBarBase.jsx';
 
 const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 
 export default function NewAppLayout({ children }) {
-    const currentPath = router.page?.url;
+    const url = usePage().url;
+    const showSearchBar = !url?.startsWith('/search');
+    const [isLoading, setIsLoading] = React.useState(false);
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const [isDarkMode, setIsDarkMode] = React.useState(
         prefersDarkMode ? true : false
@@ -31,6 +34,10 @@ export default function NewAppLayout({ children }) {
             },
     }), [isDarkMode]);
 
+    React.useEffect(() => {
+        setIsLoading(false);
+    }, [url]);
+
     const onClickHome = (e) => {
         e.preventDefault();
         router.visit('/');
@@ -38,6 +45,13 @@ export default function NewAppLayout({ children }) {
 
     const handleAboutDialogOpen = (value) => {
         setAboutDialogOpen(value);
+    };
+
+    const onSubmit = async (text) => {
+        setIsLoading(true);
+        router.visit('/search', {
+            data: { text }
+        });
     };
 
     const renderAboutDialog = () => {
@@ -76,10 +90,12 @@ export default function NewAppLayout({ children }) {
             <Typography variant="h6" noWrap component="div" sx={{margin: 1}}>
                 Library of Ladev
             </Typography>
-            {!currentPath?.startsWith('/search') ? <Box marginLeft='auto'><SearchBar
-                isLoading={false}
-                setIsLoading={() => {}}
-            /></Box> : ''}
+            {showSearchBar ? <Box marginLeft='auto'>
+                <SearchBarBase
+                    showFullSearchBar={false}
+                    onSubmit={onSubmit}
+                    isLoading={isLoading}
+                /></Box> : ''}
             </Toolbar>
         </AppBar>
         <Box flex='1'>
