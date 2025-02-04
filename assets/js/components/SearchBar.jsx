@@ -6,18 +6,19 @@ import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { router } from '@inertiajs/react';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Popper, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, FormControlLabel, Typography, Card, CardContent, CardActions } from '@mui/material';
-import { DateField } from '@mui/x-date-pickers/DateField';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import SearchBarBase from '@/components/SearchBarBase.jsx';
 import dayjs from 'dayjs';
 
 const minDate = dayjs('2022-12-19');
+const maxDate = dayjs();
 
 export default function SearchBar(props) {
     const { isLoading, setIsLoading, showFullSearchBar } = props;
     const [isFullTextSearch, setIsFullTextSearch] = React.useState(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = React.useState(props.searchParams?.title || '');
-    const [startDate, setStartDate] = React.useState(props.searchParams?.startDate ? dayjs(props.startDate) : undefined);
-    const [endDate, setEndDate] = React.useState(props.searchParams?.endDate ? dayjs(props.endDate) : undefined);
+    const [startDate, setStartDate] = React.useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
+    const [endDate, setEndDate] = React.useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
     const [disabled, setDisabled] = React.useState(false);
     const [isHelpDialogOpen, setIsHelpDialogOpen] = React.useState(false);
     const [anchorEl, setAnchorEl] = React.useState(null);
@@ -34,8 +35,8 @@ export default function SearchBar(props) {
     const handleReset = () => {
         setIsFullTextSearch(false);
         setTitle('');
-        setStartDate(undefined);
-        setEndDate(undefined);
+        setStartDate(null);
+        setEndDate(null);
     };
     const onChangeTitle = (event) => {
         setTitle(event?.target?.value);
@@ -99,27 +100,28 @@ export default function SearchBar(props) {
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='end' sx={{gap:2}}>
                 <Typography>Title:</Typography>
                 <TextField
-                    variant="standard"
                     onChange={onChangeTitle}
                     value={title}
                 />
             </Box>
-            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='end' sx={{gap:2}}>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                 <Typography>Date Range:</Typography>
-                <DateField
+                <DatePicker
                     minDate={minDate}
+                    maxDate={maxDate}
+                    views={['year', 'month', 'day']}
                     onError={(error) => setDisabled(!!error)}
                     format="YYYY-MM-DD"
-                    variant="standard"
                     value={startDate}
                     onChange={(newValue) => setStartDate(newValue)}
                 />
                 <HorizontalRuleIcon/>
-                <DateField
-                    disableFuture
+                <DatePicker
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    views={['year', 'month', 'day']}
                     onError={(error) => setDisabled(!!error)}
                     format="YYYY-MM-DD"
-                    variant="standard"
                     value={endDate}
                     onChange={(newValue) => setEndDate(newValue)}
                 />
