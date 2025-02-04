@@ -35,7 +35,12 @@ module.exports = {
                 const url = uploadedFile.filename.split(splitStr)[0];
                 if (video_metadata[url] && uploadedFile.type === 'text/plain') {
                     const video = await Video.findOne({ url });
+                    if (!video) {
+                        sails.log('Error trying to find video '+url);
+                        continue;
+                    }
                     const rawText = readFileSync(uploadedFile.fd, 'utf8');
+                    await Transcript.destroyOne({ owner: video.id });
                     await Transcript.create({ owner: video.id, text: rawText });
                 } else if (video_metadata[url] && uploadedFile.filename.endsWith('.tsv')) {
                     const date = video_metadata[url].date;

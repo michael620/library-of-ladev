@@ -54,28 +54,27 @@ export default function NewAppLayout({ children }) {
         });
     };
 
-    const renderAboutDialog = () => {
-        return (<>
-        <Typography component={InertiaLink} variant='caption' onClick={() => handleAboutDialogOpen(true)}>About</Typography>
-        <Dialog
-            open={aboutDialogOpen}
-            onClose={() => handleAboutDialogOpen(false)}
-            maxWidth="md"
-            fullWidth
-        >
-            <DialogTitle>About</DialogTitle>
-            <DialogContent>
-                <Typography gutterBottom variant="body1">
-                    This is a fan-made project and is not affiliated with Neuro-sama or Vedal.
-                </Typography>
-                <Typography variant='body1'>You can follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link></Typography>
-            </DialogContent>
-            <DialogActions>
-            <Button onClick={() => handleAboutDialogOpen(false)}>Close</Button>
-            </DialogActions>
-        </Dialog>
-        </>);
-    };
+    const aboutDialogComponent = (
+    <>
+    <Typography component={InertiaLink} variant='caption' onClick={() => handleAboutDialogOpen(true)}>About</Typography>
+    <Dialog
+        open={aboutDialogOpen}
+        onClose={() => handleAboutDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+    >
+        <DialogTitle>About</DialogTitle>
+        <DialogContent>
+            <Typography gutterBottom variant="body1">This is a fan-made project and is not affiliated with Neuro-sama or Vedal.</Typography>
+            <Typography gutterBottom variant='body1'>You can follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link>.</Typography>
+            <Typography variant='body1'>Use this <Link target="_blank" href="https://forms.gle/MNrJyYq17DRCkavUA">Google Form</Link> to report any issues or leave feedback for this website.</Typography>
+        </DialogContent>
+        <DialogActions>
+        <Button onClick={() => handleAboutDialogOpen(false)}>Close</Button>
+        </DialogActions>
+    </Dialog>
+    </>
+    );
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -109,7 +108,7 @@ export default function NewAppLayout({ children }) {
                     <Typography fontWeight='bold' variant='caption'>Links</Typography>
                     <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
                     <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
-                    {renderAboutDialog()}
+                    {aboutDialogComponent}
                 </Box>
                 <Box textAlign='right' display='flex' flexDirection='column'>
                     <Typography fontWeight='bold' variant='caption'>Special Thanks</Typography>

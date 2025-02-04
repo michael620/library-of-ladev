@@ -74,11 +74,8 @@ export default function SearchBar(props) {
         });
     };
 
-    const renderAdvancedSearch = () => {
-        if (!showFullSearchBar) {
-            return '';
-        }
-        return (<>
+    const advancedSearchComponent = (
+        <>
         <Box display='flex' flexDirection='row' justifyContent='end'>
             <Button variant="text" size="small" onClick={toggleAdvancedSearch} endIcon={<TuneIcon />}>Advanced Search</Button>
         </Box>
@@ -168,8 +165,8 @@ export default function SearchBar(props) {
                 <Button size="small" onClick={toggleHelpDialog}>Close</Button>
             </DialogActions>
         </Dialog>
-        </>);
-    };
+        </>
+    );
     
     return (<>
     <SearchBarBase
@@ -179,6 +176,6 @@ export default function SearchBar(props) {
         text={props.searchParams?.text}
         isLoading={isLoading}
     />
-    {renderAdvancedSearch()}
+    {advancedSearchComponent}
     </>);
 }

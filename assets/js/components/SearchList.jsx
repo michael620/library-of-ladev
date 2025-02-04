@@ -19,8 +19,8 @@ import { MAX_ROW_LIMIT } from '../../../shared/constants';
 const SubtitleListItem = React.memo((props) => {
     const { handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
     return (
-        <Box style={props.style}>
-            <ListItem secondaryAction={
+        <>
+            <ListItem style={props.style} sx={{paddingTop: 0, paddingBottom: 0}} secondaryAction={
                 <IconButton edge="end" aria-label="copy" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, url, startTime)}>
                     <ContentCopyIcon />
                 </IconButton>
@@ -36,7 +36,7 @@ const SubtitleListItem = React.memo((props) => {
                 autoHideDuration={3000}
                 message="Copied!"
             />
-        </Box>
+        </>
     )
 });
 
@@ -58,11 +58,11 @@ export default function SearchList(props) {
         player.current.seekTo(startTime);
     }, [player]);
 
-    const handleClickCopy = (event, url, startTime) => {
+    const handleClickCopy = React.useCallback((event, url, startTime) => {
         event.stopPropagation();
         navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${url}&t=${startTime}s`);
         setSnackbarOpen(true);
-    }
+    }, [snackbarOpen]);
 
     const opts = {
         playerVars: {
@@ -74,32 +74,6 @@ export default function SearchList(props) {
         player.current = event.target;
     }
 
-    const renderSearchResult = (video) => {
-        if (video.subtitles) {
-            return video.subtitles.map((subtitle, j) => (
-                <SubtitleListItem
-                    key={j}
-                    handleClickSubtitle={handleClickSubtitle}
-                    text={subtitle.text}
-                    startTime={subtitle.startTime}
-                    timestamp={subtitle.timestamp}
-                    url={video.url}
-                    handleClickCopy={handleClickCopy}
-                    snackbarOpen={snackbarOpen}
-                    setSnackbarOpen={setSnackbarOpen}
-                />
-            ));
-        } else if (video.matches) {
-            return video.matches.map((match, j) => (
-                <ListItem key={j}>
-                    <ListItemText primary={<Typography dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>} />
-                </ListItem>
-            ));
-        } else {
-            return '';
-        }
-    }
-
     const messageTooltip = `Only displaying the first ${MAX_ROW_LIMIT} matches. Try a more specific search.`;
     const searchResultText = props.noMoreResultsToFetch ?
     `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
@@ -107,9 +81,9 @@ export default function SearchList(props) {
 
     return (
         props.text ? <>
-        {props.text ? <ListSubheader component="div" id="nested-list-subheader" sx={{zIndex: 0, lineHeight: 1.5}}>
+        <ListSubheader component="div" sx={{zIndex: 0, lineHeight: 1.5}}>
             {searchResultText}
-        </ListSubheader> : ''}
+        </ListSubheader>
         <List
             sx={{ width: '100%', bgcolor: 'background.paper' }}
         >
@@ -128,11 +102,31 @@ export default function SearchList(props) {
                     </ListItemButton>
                     <Collapse in={open===url} timeout="auto" unmountOnExit>
                         <Paper elevation={2}>
-                        <List component="div" disablePadding sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                        <ListSubheader><Box sx={{padding: '1rem'}}>
+                        <Box sx={{padding: '1rem'}}>
                             <YouTube videoId={url} opts={opts} onReady={_onReady}/>
-                        </Box></ListSubheader>
-                            {renderSearchResult(video)}
+                        </Box>
+                        <List component="div" disablePadding>
+                        <Box sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                            {
+                                video.subtitles ? video.subtitles.map((subtitle, j) => (
+                                    <SubtitleListItem
+                                        key={j}
+                                        handleClickSubtitle={handleClickSubtitle}
+                                        text={subtitle.text}
+                                        startTime={subtitle.startTime}
+                                        timestamp={subtitle.timestamp}
+                                        url={video.url}
+                                        handleClickCopy={handleClickCopy}
+                                        snackbarOpen={snackbarOpen}
+                                        setSnackbarOpen={setSnackbarOpen}
+                                    />
+                                )) : video.matches ? video.matches.map((match, j) => (
+                                    <ListItem key={j}>
+                                        <ListItemText primary={<Typography dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>} />
+                                    </ListItem>
+                                )) : ''
+                            }
+                        </Box>
                         </List>
                         </Paper>
                     </Collapse>
@@ -141,7 +135,7 @@ export default function SearchList(props) {
             })}
         </List>
         {props.noMoreResultsToFetch ?
-        <ListSubheader component="div" id="nested-list-subheader" sx={{zIndex: 0}}>
+        <ListSubheader component="div" sx={{zIndex: 0}}>
             No more results to show.
         </ListSubheader> : <LinearProgress ref={props.lastItemRef} sx={{ visibility: isLoading ? "visible" : "hidden" }}/>
         }
