@@ -1,15 +1,15 @@
-import * as React from 'react';
+import { useState } from 'react';
 import FormControl from '@mui/material/FormControl';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
+import LinearProgress from '@mui/material/LinearProgress';
+import InputAdornment from '@mui/material/InputAdornment';
 import SendIcon from '@mui/icons-material/Send';
 import SearchIcon from '@mui/icons-material/Search';
-import { LinearProgress } from '@mui/material';
-import { InputAdornment } from '@mui/material';
 
 export default function SearchBarBase(props) {
     const { showFullSearchBar, disabled, isLoading } = props;
-    const [text, setText] = React.useState(props.text || '');
+    const [text, setText] = useState(props.text || '');
     const onChangeText = (event) => {
         setText(event?.target?.value);
     };

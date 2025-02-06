@@ -1,7 +1,8 @@
-import * as React from 'react';
-import { createTheme, Divider, ThemeProvider, useMediaQuery } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { useState, useMemo, useEffect } from 'react';
+import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import Divider from '@mui/material/Divider';
 import CssBaseline from '@mui/material/CssBaseline';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -9,9 +10,12 @@ import AppBar from '@mui/material/AppBar';
 import HomeIcon from '@mui/icons-material/Home';
 import IconButton from '@mui/material/IconButton';
 import { Link as InertiaLink, router, usePage } from '@inertiajs/react'
-import SearchBar from '@/components/SearchBar';
 import Link from '@mui/material/Link';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Card, CardContent } from '@mui/material';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import SearchBarBase from '@/components/SearchBarBase.jsx';
@@ -21,20 +25,20 @@ const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 export default function NewAppLayout({ children }) {
     const url = usePage().url;
     const showSearchBar = !url?.startsWith('/search');
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-    const [isDarkMode, setIsDarkMode] = React.useState(
+    const [isDarkMode, setIsDarkMode] = useState(
         prefersDarkMode ? true : false
     );
-    const [aboutDialogOpen, setAboutDialogOpen] = React.useState(false);
-    const theme = React.useMemo(() =>
+    const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
+    const theme = useMemo(() =>
         createTheme({
             palette: {
                 mode: isDarkMode ? 'dark' : 'light',
             },
     }), [isDarkMode]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setIsLoading(false);
     }, [url]);
 

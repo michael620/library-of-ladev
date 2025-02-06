@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo, useRef, useState, useCallback } from 'react';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -9,14 +9,18 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
+import LinearProgress from '@mui/material/LinearProgress';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Snackbar from '@mui/material/Snackbar';
 import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
-import { LinearProgress, Box, IconButton, Typography, ListItemSecondaryAction, Snackbar } from '@mui/material';
 import YouTube from 'react-youtube';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MAX_ROW_LIMIT } from '../../../shared/constants';
 
-const SubtitleListItem = React.memo((props) => {
+const SubtitleListItem = memo((props) => {
     const { handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
     return (
         <>
@@ -42,11 +46,11 @@ const SubtitleListItem = React.memo((props) => {
 
 export default function SearchList(props) {
     const { isLoading } = props;
-    const player = React.useRef(null);
-    const [open, setOpen] = React.useState(-1);
-    const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+    const player = useRef(null);
+    const [open, setOpen] = useState(-1);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-    const handleClickSubtitleListItem = React.useCallback((key) => {
+    const handleClickSubtitleListItem = useCallback((key) => {
         if (open === key) {
             setOpen(null);
         } else {
@@ -54,11 +58,11 @@ export default function SearchList(props) {
         }
     }, [open]);
 
-    const handleClickSubtitle = React.useCallback((startTime) => {
+    const handleClickSubtitle = useCallback((startTime) => {
         player.current.seekTo(startTime);
     }, [player]);
 
-    const handleClickCopy = React.useCallback((event, url, startTime) => {
+    const handleClickCopy = useCallback((event, url, startTime) => {
         event.stopPropagation();
         navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${url}&t=${startTime}s`);
         setSnackbarOpen(true);
@@ -75,7 +79,7 @@ export default function SearchList(props) {
     }
 
     const messageTooltip = `Only displaying the first ${MAX_ROW_LIMIT} matches. Try a more specific search.`;
-    const searchResultText = props.noMoreResultsToFetch ?
+    const searchResultText = !props.searchResult?.length ? `No results for "${props.text}".` : props.noMoreResultsToFetch ?
     `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
     `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
 
@@ -134,7 +138,7 @@ export default function SearchList(props) {
                 );
             })}
         </List>
-        {props.noMoreResultsToFetch ?
+        {!props.searchResult?.length ? '' : props.noMoreResultsToFetch ?
         <ListSubheader component="div" sx={{zIndex: 0}}>
             No more results to show.
         </ListSubheader> : <LinearProgress ref={props.lastItemRef} sx={{ visibility: isLoading ? "visible" : "hidden" }}/>

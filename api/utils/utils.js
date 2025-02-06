@@ -32,10 +32,6 @@ const onCloseTSV = async (fd, subtitles, speakers, resolve) => {
         for (const chunk of chunks) {
             await Subtitle.createEach(chunk);
         }
-        for (const speaker of speakers) {
-            if (speaker === '') continue;
-            await Tag.findOrCreate({ name: speaker }, { name: speaker });
-        }
     }
     resolve();
 };
@@ -44,7 +40,6 @@ const createVideoAndSubtitle = async (fd, url, title, date) => {
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
     const video = await Video.findOrCreate({ url }, { url, title, date });
-    await Tagmap.findOrCreate({ owner: video.id }, { owner: video.id });
     return new Promise(function(resolve,reject){
         const subtitles = [];
         const speakers = new Set();

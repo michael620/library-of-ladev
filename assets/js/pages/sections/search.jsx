@@ -1,19 +1,18 @@
-import * as React from 'react';
+import { useState, useRef, useCallback } from 'react';
 import NewAppLayout from '@/layouts/NewAppLayout.jsx';
 import Paper from '@mui/material/Paper';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import SearchList from '@/components/SearchList.jsx';
 import SearchBar from '@/components/SearchBar.jsx';
-import { Head } from '@inertiajs/react'
-import { router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react'
 import { FETCH_SIZE } from '../../../../shared/constants';
 
 Search.layout = (page) => <NewAppLayout children={page} />
 export default function Search(props) {
-    const [isLoading, setIsLoading] = React.useState(false);
-    const [searchResult, setSearchResult] = React.useState(props.searchResult);
-    const [noMoreResultsToFetch, setNoMoreResultsToFetch] = React.useState(props.noMoreResultsToFetch);
-    const observer = React.useRef();
+    const [isLoading, setIsLoading] = useState(false);
+    const [searchResult, setSearchResult] = useState(props.searchResult);
+    const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
+    const observer = useRef(null);
     const fetchMoreResults = async () => {
         if (!props.searchResult || !props.searchResult.length || noMoreResultsToFetch || isLoading) return;
         setIsLoading(true);
@@ -43,7 +42,7 @@ export default function Search(props) {
         });
     };
 
-    const lastItemRef = React.useCallback(
+    const lastItemRef = useCallback(
         (node) => {
             if (isLoading) return;
             if (observer.current) observer.current.disconnect();

@@ -1,11 +1,23 @@
-import * as React from 'react';
+import { useState } from 'react';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import HelpIcon from '@mui/icons-material/Help';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { router } from '@inertiajs/react';
 import TuneIcon from '@mui/icons-material/Tune';
-import { Popper, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, FormControlLabel, Typography, Card, CardContent, CardActions } from '@mui/material';
+import Popper from '@mui/material/Popper';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActions from '@mui/material/CardActions';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import SearchBarBase from '@/components/SearchBarBase.jsx';
 import dayjs from 'dayjs';
@@ -15,13 +27,13 @@ const maxDate = dayjs();
 
 export default function SearchBar(props) {
     const { isLoading, setIsLoading, showFullSearchBar } = props;
-    const [isFullTextSearch, setIsFullTextSearch] = React.useState(props.searchParams?.isFullTextSearch || false);
-    const [title, setTitle] = React.useState(props.searchParams?.title || '');
-    const [startDate, setStartDate] = React.useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
-    const [endDate, setEndDate] = React.useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
-    const [disabled, setDisabled] = React.useState(false);
-    const [isHelpDialogOpen, setIsHelpDialogOpen] = React.useState(false);
-    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
+    const [title, setTitle] = useState(props.searchParams?.title || '');
+    const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
+    const [endDate, setEndDate] = useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
+    const [disabled, setDisabled] = useState(false);
+    const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
+    const [anchorEl, setAnchorEl] = useState(null);
 
     const toggleAdvancedSearch = (event) => {
         setAnchorEl(anchorEl ? null : event.currentTarget);
@@ -44,11 +56,6 @@ export default function SearchBar(props) {
     const onChangeFullTextSearch = (event) => {
         setIsFullTextSearch(event.target.checked);
     };
-    const onKeyDown = (event) => {
-        if (event.key === 'Enter') {
-            onSubmit(event);
-        }
-    }
 
     const onSubmit = async (text) => {
         if (disabled) {
@@ -97,7 +104,7 @@ export default function SearchBar(props) {
                     onChange={onChangeFullTextSearch}
                 />
             </Box>
-            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='end' sx={{gap:2}}>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                 <Typography>Title:</Typography>
                 <TextField
                     onChange={onChangeTitle}
@@ -172,7 +179,7 @@ export default function SearchBar(props) {
     
     return (<>
     <SearchBarBase
-        showFullSearchBar={true}
+        showFullSearchBar={showFullSearchBar}
         onSubmit={onSubmit}
         disabled={disabled}
         text={props.searchParams?.text}

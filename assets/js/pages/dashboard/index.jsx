@@ -1,10 +1,11 @@
-import * as React from 'react';
 import { Link, Head, usePage } from '@inertiajs/react';
 import NewAppLayout from '@/layouts/NewAppLayout.jsx';
-import { FormControl, TextField, Button, IconButton, Paper, Box, Typography } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import SendIcon from '@mui/icons-material/Send';
-import { useForm } from '@inertiajs/react';
 import useFormWithUploads from '@/hooks/useFormWithUploads.js';
 
 Dashboard.layout = (page) => <NewAppLayout children={page} />
