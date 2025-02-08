@@ -77,8 +77,14 @@ const TAGS = {
     'Vedal (cameo)': CAMEOS
 };
 
+const FETCH_TYPE = {
+    PAGE: 'PAGE',
+    PAGE_FTS: 'PAGE_FTS',
+    SUBTITLE: 'SUBTITLE'
+};
+
 module.exports = {
-    MAX_ROW_LIMIT: 100,
     FETCH_SIZE: 25,
+    FETCH_TYPE,
     TAGS
 };

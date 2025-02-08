@@ -16,10 +16,9 @@ import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
-import Tooltip from '@mui/material/Tooltip';
 import YouTube from 'react-youtube';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { TAGS, MAX_ROW_LIMIT } from '../../../shared/constants';
+import { TAGS } from '../../../shared/constants';
 
 const SubtitleListItem = memo((props) => {
     const { handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
@@ -46,7 +45,7 @@ const SubtitleListItem = memo((props) => {
 });
 
 export default function SearchList(props) {
-    const { isLoading, showTags } = props;
+    const { isLoading, isLoadingSubtitle, showTags } = props;
     const player = useRef(null);
     const [open, setOpen] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -79,7 +78,6 @@ export default function SearchList(props) {
         player.current = event.target;
     }
 
-    const messageTooltip = `Only displaying the first ${MAX_ROW_LIMIT} matches. Try a more specific search.`;
     const searchResultText = !props.searchResult?.length ? `No results for "${props.text}".` : props.noMoreResultsToFetch ?
     `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
     `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
@@ -95,7 +93,6 @@ export default function SearchList(props) {
             {props.searchResult.map((video, i) => {
                 const { url, title, date, total, subtitles, matches } = video;
                 const numMatches = subtitles ? Number(total) : matches.length;
-                const showTooltip = subtitles && numMatches > MAX_ROW_LIMIT;
                 return (
                     <Box key={url}>
                     <ListItemButton onClick={(e) => handleClickSubtitleListItem(url)}>
@@ -110,7 +107,7 @@ export default function SearchList(props) {
                                         <Chip key={i} label={tag} size="small" color={TAGS[tag].color}/>
                                     ))}
                                 </Box> : ''}
-                                <Tooltip title={showTooltip ? messageTooltip : ''}><span>{`${numMatches} matches${showTooltip ? '*' : ''}`}</span></Tooltip>
+                                <span>{`${numMatches} matches`}</span>
                             </Box>
                         } />
                         {open===url ? <ExpandLess /> : <ExpandMore />}
@@ -130,7 +127,7 @@ export default function SearchList(props) {
                                         text={subtitle.text}
                                         startTime={subtitle.startTime}
                                         timestamp={subtitle.timestamp}
-                                        url={video.url}
+                                        url={url}
                                         handleClickCopy={handleClickCopy}
                                         snackbarOpen={snackbarOpen}
                                         setSnackbarOpen={setSnackbarOpen}
@@ -141,6 +138,7 @@ export default function SearchList(props) {
                                     </ListItem>
                                 )) : ''
                             }
+                            {(video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => props.onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
                         </Box>
                         </List>
                         </Paper>
@@ -152,7 +150,7 @@ export default function SearchList(props) {
         {!props.searchResult?.length ? '' : props.noMoreResultsToFetch ?
         <ListSubheader component="div" sx={{zIndex: 0}}>
             No more results to show.
-        </ListSubheader> : <LinearProgress ref={props.lastItemRef} sx={{ visibility: isLoading ? "visible" : "hidden" }}/>
+        </ListSubheader> : <LinearProgress ref={props.onFetchMoreResults} sx={{ visibility: isLoading ? "visible" : "hidden" }}/>
         }
         </> : ''
     );

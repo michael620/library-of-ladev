@@ -1,24 +1,28 @@
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import NewAppLayout from '@/layouts/NewAppLayout.jsx';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import SearchList from '@/components/SearchList.jsx';
 import SearchBar from '@/components/SearchBar.jsx';
-import { Head, router } from '@inertiajs/react'
-import { FETCH_SIZE } from '../../../../shared/constants';
+import { Head, router } from '@inertiajs/react';
+import { FETCH_TYPE } from '../../../../shared/constants';
 
 Search.layout = (page) => <NewAppLayout children={page} />
 export default function Search(props) {
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);
     const [searchResult, setSearchResult] = useState(props.searchResult);
+    const [subtitleResult, setSubtitleResult] = useState(null);
     const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
-    const [showTags, setShowTags] = useState(false);
+    const [showTags, setShowTags] = useState(props.searchParams?.showTags || false);
     const observer = useRef(null);
+    const observerSubtitle = useRef(null);
+
     const fetchMoreResults = async () => {
-        if (!props.searchResult || !props.searchResult.length || noMoreResultsToFetch || isLoading) return;
+        if (noMoreResultsToFetch || isLoading) return;
         setIsLoading(true);
-        const lastUrl = props.searchParams?.isFullTextSearch ? undefined : searchResult[searchResult.length - 1].url;
-        const numResults = props.searchParams?.isFullTextSearch ? searchResult.length : undefined;
+        let fetchType = props.searchParams?.isFullTextSearch ? FETCH_TYPE.PAGE_FTS : FETCH_TYPE.PAGE;
+        let fetchMetadata = fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : searchResult[searchResult.length - 1].url;
         router.visit('/search', {
             data: {
                 text: props.searchParams?.text,
@@ -28,8 +32,8 @@ export default function Search(props) {
                 endDate: props.searchParams?.endDate,
                 includeTags: props.searchParams?.includeTags,
                 excludeTags: props.searchParams?.excludeTags,
-                lastUrl,
-                numResults
+                fetchType,
+                fetchMetadata,
             },
             preserveState: true,
             preserveScroll: true,
@@ -37,7 +41,7 @@ export default function Search(props) {
             onSuccess: (response) => {
                 const mergedResults = [...searchResult, ...response.props.searchResult];
                 setSearchResult(mergedResults);
-                if (response.props.searchResult.length < FETCH_SIZE) {
+                if (response.props.noMoreResultsToFetch) {
                     setNoMoreResultsToFetch(true);
                 }
                 setIsLoading(false);
@@ -45,20 +49,75 @@ export default function Search(props) {
         });
     };
 
-    const lastItemRef = useCallback(
+    const fetchSubtitles = async (i, url) => {
+        if (isLoadingSubtitle) return;
+        setIsLoadingSubtitle(true);
+        router.visit('/search', {
+            data: {
+                text: props.searchParams?.text,
+                isFullTextSearch: props.searchParams?.isFullTextSearch,
+                title: props.searchParams?.title,
+                startDate: props.searchParams?.startDate,
+                endDate: props.searchParams?.endDate,
+                includeTags: props.searchParams?.includeTags,
+                excludeTags: props.searchParams?.excludeTags,
+                fetchType: FETCH_TYPE.SUBTITLE,
+                fetchMetadata: url
+            },
+            preserveState: true,
+            preserveScroll: true,
+            preserveUrl: true,
+            onSuccess: (response) => {
+                if (response.props.subtitleResult) {
+                    setSubtitleResult({
+                        subtitles: response.props.subtitleResult,
+                        i
+                    });
+                }
+                setIsLoadingSubtitle(false);
+            }
+        });
+    };
+
+    useEffect(() => {
+        if (!subtitleResult) return;
+        if (subtitleResult.subtitles && (subtitleResult?.i <= searchResult?.length || 0)) {
+            const newResults = [...searchResult];
+            newResults[subtitleResult.i].subtitles = subtitleResult.subtitles;
+            newResults[subtitleResult.i].noMoreSubtitlesToFetch = true;
+            setSearchResult(newResults);
+        } else {
+            console.log('something went wrong with fetching subtitles');
+        }
+        setSubtitleResult(null);
+    }, [subtitleResult]);
+
+    const onFetchMoreResults = useCallback(
         (node) => {
-            if (isLoading) return;
+            if (!node || isLoading) return;
             if (observer.current) observer.current.disconnect();
-        
             observer.current = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting) {
-                    fetchMoreResults(); // Fetch new data when last item comes into view
+                    fetchMoreResults();
                 }
             });
-        
             if (node) observer.current.observe(node);
         },
         [isLoading]
+    );
+
+    const onFetchMoreSubtitles = useCallback(
+        (node, i, url) => {
+            if (!node || isLoadingSubtitle) return;
+            if (observerSubtitle.current) observerSubtitle.current.disconnect();
+            observerSubtitle.current = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    fetchSubtitles(i, url);
+                }
+            });
+            observerSubtitle.current.observe(node);
+        },
+        [isLoadingSubtitle]
     );
     return (
     <Box>
@@ -75,10 +134,12 @@ export default function Search(props) {
         <SearchList
             searchResult={searchResult}
             text={props.searchParams?.text}
-            lastItemRef={lastItemRef}
+            onFetchMoreResults={onFetchMoreResults}
             noMoreResultsToFetch={noMoreResultsToFetch}
             showTags={showTags}
             isLoading={isLoading}
+            onFetchMoreSubtitles={onFetchMoreSubtitles}
+            isLoadingSubtitle={isLoadingSubtitle}
         />
     </Paper>
     </Box>

@@ -87,7 +87,6 @@ const sortTags = (tags) => {
 }
 
 const processRawResult = (rawResult) => {
-    
     const map = new Map();
     for (const row of rawResult.rows) {
         const { url, title, date, tags } = row;
@@ -131,12 +130,22 @@ const processRawResultFTS = (rawResult) => {
     return results;
 }
 
+const processRawResultSubtitle = (rawResult) => {
+    const results = rawResult.rows.map(row => ({
+        startTime: row.startTime,
+        timestamp: formatSeconds(row.startTime),
+        text: row.text
+    }));
+    return results;
+}
+
 module.exports = {
     processTSVLine,
     onCloseTSV,
     formatSeconds,
     processRawResult,
     processRawResultFTS,
+    processRawResultSubtitle,
     createVideoAndSubtitle,
     buildVideoMetadata
 };

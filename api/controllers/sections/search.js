@@ -25,20 +25,21 @@ module.exports = {
             description: 'endDate',
             type: 'string'
         },
-        lastUrl: {
-            description: 'lastUrl',
-            type: 'string'
-        },
-        numResults: {
-            description: 'numResults',
-            type: 'number'
-        },
         includeTags: {
             description: 'includeTags',
             type: 'ref'
         },
         excludeTags: {
             description: 'excludeTags',
+            type: 'ref'
+        },
+        showTags: {
+            type: 'boolean'
+        },
+        fetchType: {
+            type: 'string'
+        },
+        fetchMetadata: {
             type: 'ref'
         }
     },
@@ -49,9 +50,8 @@ module.exports = {
       }
     },
   
-    fn: async function ({text, isFullTextSearch, title, startDate, endDate, lastUrl, numResults, includeTags, excludeTags }) {
+    fn: async function ({text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, showTags, fetchType, fetchMetadata }) {
         const props = {
-            searchResult: [],
             searchParams: {
                 text,
                 isFullTextSearch,
@@ -59,12 +59,24 @@ module.exports = {
                 startDate,
                 endDate,
                 includeTags,
-                excludeTags
+                excludeTags,
+                showTags
             }
         };
-        if (text) {
-            const { processRawResult, processRawResultFTS } = require('../../utils/utils');
-            const { MAX_ROW_LIMIT, FETCH_SIZE } = require('../../../shared/constants');
+        const { FETCH_SIZE, FETCH_TYPE } = require('../../../shared/constants');
+        const { processRawResult, processRawResultFTS, processRawResultSubtitle } = require('../../utils/utils');
+        if (fetchType === FETCH_TYPE.SUBTITLE) {
+            const RAW_SQL = `
+            SELECT subtitle.text, subtitle."startTime"
+            FROM subtitle
+            JOIN video ON subtitle.owner = video.id
+            WHERE video.url = $2
+            AND subtitle.text ILIKE $1
+            ORDER BY subtitle."startTime";
+            `;
+            const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${text}%`, fetchMetadata]);
+            props.subtitleResult = processRawResultSubtitle(rawResult);
+        } else if (text) {
             const SQL_FILTERS = `
             WITH ExcludedVideos AS (  -- Step 1: Exclude videos that contain unwanted tags
                 SELECT DISTINCT tm.video_id
@@ -120,13 +132,14 @@ module.exports = {
                 JOIN video ON transcript.owner = video.id
                 LEFT JOIN VideoTags vt ON video.id = vt.video_id
                 WHERE search_vector @@ websearch_to_tsquery($1)
+                AND video.id IN (SELECT video_id FROM FilteredVideosWithMeta)
                 ORDER BY rank DESC
                 LIMIT $2
                 OFFSET $8;`;
-                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`${text}`, `${FETCH_SIZE}`, (title ? `%${title}%` : null), startDate, endDate, null, null, numResults || 0, excludeTags, includeTags]);
+                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`${text}`, `${FETCH_SIZE}`, (title ? `%${title}%` : null), startDate, endDate, null, null, fetchMetadata || 0, excludeTags, includeTags]);
                 props.searchResult = processRawResultFTS(rawResult);
             } else {
-                const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
+                const lastVideo = fetchMetadata ? await Video.findOne({ url: fetchMetadata }) : undefined;
                 const RAW_SQL = `
                 ${SQL_FILTERS},
                 RankedSubtitles AS (
@@ -158,7 +171,7 @@ module.exports = {
                 WHERE s.row_num <= $2
                 ORDER BY s.date DESC, s.video_id, s."startTime";
                 `;
-                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${text}%`, MAX_ROW_LIMIT, (title ? `%${title}%` : null), startDate, endDate, lastVideo?.date, lastVideo?.id, FETCH_SIZE, excludeTags, includeTags]);
+                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${text}%`, FETCH_SIZE, (title ? `%${title}%` : null), startDate, endDate, lastVideo?.date, lastVideo?.id, FETCH_SIZE, excludeTags, includeTags]);
                 props.searchResult = processRawResult(rawResult);
             }
             if (props.searchResult.length < FETCH_SIZE) {
