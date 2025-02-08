@@ -12,6 +12,7 @@ export default function Search(props) {
     const [isLoading, setIsLoading] = useState(false);
     const [searchResult, setSearchResult] = useState(props.searchResult);
     const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
+    const [showTags, setShowTags] = useState(false);
     const observer = useRef(null);
     const fetchMoreResults = async () => {
         if (!props.searchResult || !props.searchResult.length || noMoreResultsToFetch || isLoading) return;
@@ -25,6 +26,8 @@ export default function Search(props) {
                 title: props.searchParams?.title,
                 startDate: props.searchParams?.startDate,
                 endDate: props.searchParams?.endDate,
+                includeTags: props.searchParams?.includeTags,
+                excludeTags: props.searchParams?.excludeTags,
                 lastUrl,
                 numResults
             },
@@ -65,6 +68,8 @@ export default function Search(props) {
         setIsLoading={setIsLoading}
         searchParams={props.searchParams}
         showFullSearchBar={true}
+        showTags={showTags}
+        setShowTags={setShowTags}
     />
     <Paper elevation={1}>
         <SearchList
@@ -72,6 +77,7 @@ export default function Search(props) {
             text={props.searchParams?.text}
             lastItemRef={lastItemRef}
             noMoreResultsToFetch={noMoreResultsToFetch}
+            showTags={showTags}
             isLoading={isLoading}
         />
     </Paper>

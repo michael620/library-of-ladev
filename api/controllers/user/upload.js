@@ -27,8 +27,10 @@ module.exports = {
         const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);
         const video_metadata_file = uploadedFiles.find((e) => e.filename === 'video_metadata.tsv');
+        const tag_metadata_file = uploadedFiles.find((e) => e.filename === 'tag_metadata.tsv');
         if (video_metadata_file) {
             const video_metadata = await buildVideoMetadata(video_metadata_file.fd);
+            await sails.rm(video_metadata_file.fd);
             for (const uploadedFile of uploadedFiles) {
                 if (uploadedFile.filename === 'video_metadata.tsv') continue;
                 const splitStr = uploadedFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
@@ -51,6 +53,24 @@ module.exports = {
                     sails.log(uploadedFile);
                 }
                 await sails.rm(uploadedFile.fd);
+            }
+        } else if (tag_metadata_file) {
+            const tag_metadata = await buildVideoMetadata(tag_metadata_file.fd);
+            await sails.rm(tag_metadata_file.fd);
+            const rawSqls = [];
+            Object.keys(tag_metadata).forEach(key => {
+                const tags = tag_metadata[key].tags.split(', ');
+                const formattedTags = tags.map(item => `'${item}'`).join(', ');
+                const RAW_SQL = `
+                INSERT INTO tagmap (video_id, tag_id)
+                SELECT v.id, t.id
+                FROM tag t
+                JOIN video v ON v.url = '${key}'
+                WHERE t.name IN (${formattedTags});`;
+                rawSqls.push(RAW_SQL);
+            });
+            for (const raw of rawSqls) {
+                await sails.sendNativeQuery(raw);
             }
         } else {
             sails.log(`video_metadata_file not found`);

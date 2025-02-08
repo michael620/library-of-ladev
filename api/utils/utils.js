@@ -56,9 +56,9 @@ const buildVideoMetadata = async (fd, subtitles, speakers) => {
         const metadata = {};
         createInterface({input: createReadStream(fd)})
             .on('line', (data) => {
-                const [url, date, title] = data.split('\t');
+                const [url, date, title, tags] = data.split('\t');
                 if (url === 'url') return;
-                metadata[url] = { date, title };
+                metadata[url] = { date, title, tags };
             })
             .on('close', () => {
                 resolve(metadata);
@@ -73,14 +73,30 @@ const formatSeconds = (seconds) => {
     return `${hours}h ${minutes}m ${remainingSeconds}s`;
 }
 
+const sortTags = (tags) => {
+    if (!tags) return [];
+    const { TAGS } = require('../../shared/constants');
+    const filteredTags = tags.split(', ').filter(tag => {
+        if (!TAGS[tag]) {
+            sails.log(`Missing tag ${tag}`);
+            return false;
+        }
+        return true;
+    }).sort((a, b) => TAGS[a].order - TAGS[b].order);
+    return filteredTags;
+}
+
 const processRawResult = (rawResult) => {
+    
     const map = new Map();
     for (const row of rawResult.rows) {
-        const entry = map.get(row.url) || {
-            url: row.url,
-            title: row.title,
-            date: row.date,
+        const { url, title, date, tags } = row;
+        const entry = map.get(url) || {
+            url,
+            title,
+            date,
             total: row.total_count,
+            tags: sortTags(tags),
             subtitles: []
         };
         entry.subtitles.push({
@@ -88,7 +104,7 @@ const processRawResult = (rawResult) => {
             timestamp: formatSeconds(row.startTime),
             text: row.text
         });
-        map.set(row.url, entry);
+        map.set(url, entry);
     }
     const results = Array.from(map.values());
     return results;
@@ -97,7 +113,7 @@ const processRawResult = (rawResult) => {
 const processRawResultFTS = (rawResult) => {
     const map = new Map();
     for (const row of rawResult.rows) {
-        const { url, title, date } = row;
+        const { url, title, date, tags } = row;
         const matches = row.snippets.split(' || ').map((snippet) => {
             return { text: snippet };
         });
@@ -105,6 +121,7 @@ const processRawResultFTS = (rawResult) => {
             url,
             title,
             date,
+            tags: sortTags(tags),
             matches: []
         };
         entry.matches.push(...matches);

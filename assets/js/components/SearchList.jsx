@@ -15,10 +15,11 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import YouTube from 'react-youtube';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { MAX_ROW_LIMIT } from '../../../shared/constants';
+import { TAGS, MAX_ROW_LIMIT } from '../../../shared/constants';
 
 const SubtitleListItem = memo((props) => {
     const { handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
@@ -45,9 +46,9 @@ const SubtitleListItem = memo((props) => {
 });
 
 export default function SearchList(props) {
-    const { isLoading } = props;
+    const { isLoading, showTags } = props;
     const player = useRef(null);
-    const [open, setOpen] = useState(-1);
+    const [open, setOpen] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
 
     const handleClickSubtitleListItem = useCallback((key) => {
@@ -101,7 +102,17 @@ export default function SearchList(props) {
                         <ListItemAvatar>
                             <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${url}/default.jpg`} />
                         </ListItemAvatar>
-                        <ListItemText primary={`${title} - ${date}`} secondary={<Tooltip title={showTooltip ? messageTooltip : ''}><span>{`${numMatches} matches${showTooltip ? '*' : ''}`}</span></Tooltip>} />
+                        <ListItemText primary={`${title} - ${date}`} disableTypography secondary={
+                            <Box display='flex' flexDirection='column'>
+                                {(showTags && video.tags.length) ?
+                                <Box display='flex' flexDirection='row' flexWrap='wrap' sx={{gap: 1}}>
+                                    {video.tags.map((tag, i) => (
+                                        <Chip key={i} label={tag} size="small" color={TAGS[tag].color}/>
+                                    ))}
+                                </Box> : ''}
+                                <Tooltip title={showTooltip ? messageTooltip : ''}><span>{`${numMatches} matches${showTooltip ? '*' : ''}`}</span></Tooltip>
+                            </Box>
+                        } />
                         {open===url ? <ExpandLess /> : <ExpandMore />}
                     </ListItemButton>
                     <Collapse in={open===url} timeout="auto" unmountOnExit>

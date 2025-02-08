@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import HelpIcon from '@mui/icons-material/Help';
@@ -18,19 +19,58 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
+import Autocomplete from '@mui/material/Autocomplete';
+import Chip from '@mui/material/Chip';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import SearchBarBase from '@/components/SearchBarBase.jsx';
 import dayjs from 'dayjs';
+import { TAGS } from '../../../shared/constants';
 
 const minDate = dayjs('2022-12-19');
 const maxDate = dayjs();
 
+const CustomAutocomplete = (props) => {
+    const theme = useTheme();
+    const {value, setValue, label } = props;
+    return <Autocomplete
+        fullWidth
+        sx={{maxWidth: 'md'}}
+        multiple
+        disableCloseOnSelect
+        value={value}
+        onChange={(event, newValue) => {
+            setValue(newValue);
+        }}
+        id="tags"
+        options={Object.keys(TAGS)}
+        getOptionLabel={(option) => option}
+        groupBy={(option) => TAGS[option].text}
+        renderTags={(v, getTagProps) =>
+            v.map((option, index) => (
+                <Chip
+                    {...getTagProps({ index })}
+                    key={option}
+                    label={option}
+                    sx={{
+                        backgroundColor: theme.palette[TAGS[option].color][theme.palette.mode],
+                    }}
+                />
+            ))
+        }
+        renderInput={(params) => (
+            <TextField {...params} label={label} />
+        )}
+    />
+};
+
 export default function SearchBar(props) {
-    const { isLoading, setIsLoading, showFullSearchBar } = props;
+    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags } = props;
     const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = useState(props.searchParams?.title || '');
     const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
     const [endDate, setEndDate] = useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
+    const [includeTags, setIncludeTags] = useState(props.searchParams?.includeTags || []);
+    const [excludeTags, setExcludeTags] = useState(props.searchParams?.excludeTags || []);
     const [disabled, setDisabled] = useState(false);
     const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -49,12 +89,17 @@ export default function SearchBar(props) {
         setTitle('');
         setStartDate(null);
         setEndDate(null);
+        setIncludeTags([]);
+        setExcludeTags([]);
     };
     const onChangeTitle = (event) => {
         setTitle(event?.target?.value);
     };
     const onChangeFullTextSearch = (event) => {
         setIsFullTextSearch(event.target.checked);
+    };
+    const toggleShowTags = () => {
+        setShowTags(!showTags);
     };
 
     const onSubmit = async (text) => {
@@ -77,6 +122,12 @@ export default function SearchBar(props) {
         if (endDate) {
             data.endDate = endDate.format('YYYY-MM-DD');
         }
+        if (includeTags.length) {
+            data.includeTags = includeTags;
+        }
+        if (excludeTags.length) {
+            data.excludeTags = excludeTags;
+        }
         router.visit('/search', {
             data
         });
@@ -95,7 +146,7 @@ export default function SearchBar(props) {
                 </IconButton>
             </CardActions>
             <CardContent>
-            <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:1}}>
+            <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
             <Box display='flex' flexDirection='row' justifyContent='start'>
                 <FormControlLabel
                     control={<Checkbox/>}
@@ -105,15 +156,15 @@ export default function SearchBar(props) {
                 />
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                <Typography>Title:</Typography>
                 <TextField
+                    label={'Title'}
                     onChange={onChangeTitle}
                     value={title}
                 />
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                <Typography>Date Range:</Typography>
                 <DatePicker
+                    label='From'
                     minDate={minDate}
                     maxDate={maxDate}
                     views={['year', 'month', 'day']}
@@ -124,6 +175,7 @@ export default function SearchBar(props) {
                 />
                 <HorizontalRuleIcon/>
                 <DatePicker
+                    label='To'
                     minDate={minDate}
                     maxDate={maxDate}
                     views={['year', 'month', 'day']}
@@ -131,6 +183,28 @@ export default function SearchBar(props) {
                     format="YYYY-MM-DD"
                     value={endDate}
                     onChange={(newValue) => setEndDate(newValue)}
+                />
+            </Box>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                <CustomAutocomplete
+                    value={includeTags}
+                    setValue={setIncludeTags}
+                    label='Include Tags'
+                />
+            </Box>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                <CustomAutocomplete
+                    value={excludeTags}
+                    setValue={setExcludeTags}
+                    label='Exclude Tags'
+                />
+            </Box>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                <FormControlLabel
+                    control={<Checkbox/>}
+                    checked={showTags}
+                    label={'Show tags in search results'}
+                    onChange={toggleShowTags}
                 />
             </Box>
             </Box>
