@@ -36,10 +36,29 @@ const onCloseTSV = async (fd, subtitles, speakers, resolve) => {
     resolve();
 };
 
-const createVideoAndSubtitle = async (fd, url, title, date) => {
+const createVideoAndSubtitle = async (fd, metadata) => {
+    const { url, title, date, tags } = metadata;
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
     const video = await Video.findOrCreate({ url }, { url, title, date });
+    const tagsArr = tags.split(', ');
+    const sqls = [];
+    for (const tag of tagsArr) {
+        sqls.push(`
+            INSERT INTO tag (name) VALUES ('${tag}') ON CONFLICT (name) DO NOTHING;
+        `);
+    }
+    const formattedTags = tagsArr.map(item => `'${item}'`).join(', ');
+    sqls.push(`
+        INSERT INTO tagmap (video_id, tag_id)
+        SELECT v.id, t.id
+        FROM tag t
+        JOIN video v ON v.url = '${url}'
+        WHERE t.name IN (${formattedTags});
+    `);
+    for (const sql of sqls) {
+        await sails.sendNativeQuery(sql);
+    }
     return new Promise(function(resolve,reject){
         const subtitles = [];
         const speakers = new Set();
@@ -58,7 +77,7 @@ const buildVideoMetadata = async (fd, subtitles, speakers) => {
             .on('line', (data) => {
                 const [url, date, title, tags] = data.split('\t');
                 if (url === 'url') return;
-                metadata[url] = { date, title, tags };
+                metadata[url] = { url, date, title, tags };
             })
             .on('close', () => {
                 resolve(metadata);
