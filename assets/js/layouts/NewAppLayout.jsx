@@ -31,6 +31,7 @@ export default function NewAppLayout({ children }) {
         prefersDarkMode ? true : false
     );
     const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
+    const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
     const theme = useMemo(() =>
         createTheme({
             palette: {
@@ -47,10 +48,6 @@ export default function NewAppLayout({ children }) {
         router.visit('/');
     };
 
-    const handleAboutDialogOpen = (value) => {
-        setAboutDialogOpen(value);
-    };
-
     const onSubmit = async (text) => {
         setIsLoading(true);
         router.visit('/search', {
@@ -59,11 +56,9 @@ export default function NewAppLayout({ children }) {
     };
 
     const aboutDialogComponent = (
-    <>
-    <Typography component={InertiaLink} variant='caption' onClick={() => handleAboutDialogOpen(true)}>About</Typography>
     <Dialog
         open={aboutDialogOpen}
-        onClose={() => handleAboutDialogOpen(false)}
+        onClose={() => setAboutDialogOpen(false)}
         maxWidth="md"
         fullWidth
     >
@@ -71,13 +66,35 @@ export default function NewAppLayout({ children }) {
         <DialogContent>
             <Typography gutterBottom variant="body1">This is a fan-made project and is not affiliated with Neuro-sama or Vedal.</Typography>
             <Typography gutterBottom variant='body1'>You can follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link>.</Typography>
-            <Typography variant='body1'>Use this <Link target="_blank" href="https://forms.gle/MNrJyYq17DRCkavUA">Google Form</Link> to report any issues or leave feedback for this website.</Typography>
+            <Typography variant='body1'>Use this <Link target="_blank" href="https://forms.gle/MNrJyYq17DRCkavUA">Google Form</Link> or <Link href="mailto:libraryofladev@gmail.com">email</Link> to report any issues or leave feedback for this website.</Typography>
         </DialogContent>
         <DialogActions>
-        <Button onClick={() => handleAboutDialogOpen(false)}>Close</Button>
+        <Button onClick={() => setAboutDialogOpen(false)}>Close</Button>
         </DialogActions>
     </Dialog>
-    </>
+    );
+
+    const creditsDialogComponent = (
+    <Dialog
+        open={creditsDialogOpen}
+        onClose={() => setCreditsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+    >
+        <DialogTitle>Special Thanks</DialogTitle>
+        <DialogContent>
+            <Typography>VODs are from the following channels:</Typography>
+            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@NArchiver">Neuro Archiver</Link></Typography>
+            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@Neuro-samaVods">Neuro-sama Official Vods</Link></Typography>
+            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@Neuro-samaUnofficialVODs">Neuro-sama Unofficial VODs</Link></Typography>
+            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@cpol.archive">cpol.archive</Link></Typography>
+            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@neuro-samafullstreamvod">Neuro-sama Full Stream VOD</Link></Typography>
+            <Typography variant='body1'><br/>Inspired by a librarian and a Minecraft mob</Typography>
+        </DialogContent>
+        <DialogActions>
+        <Button onClick={() => setCreditsDialogOpen(false)}>Close</Button>
+        </DialogActions>
+    </Dialog>
     );
 
     return (
@@ -107,18 +124,18 @@ export default function NewAppLayout({ children }) {
         </Box>
         <Box>
             <Divider/>
-            <Box paddingTop='1rem' display='flex' flexDirection='row' justifyContent='space-between'>
+            <Box paddingTop='1rem' display='flex' flexDirection='row' justifyContent='start' gap={2}>
                 <Box textAlign='left' display='flex' flexDirection='column'>
-                    <Typography fontWeight='bold' variant='caption'>Links</Typography>
+                    <Typography fontWeight='bold' variant='caption'>Site Map</Typography>
                     <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
                     <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
-                    {aboutDialogComponent}
                 </Box>
-                <Box textAlign='right' display='flex' flexDirection='column'>
-                    <Typography fontWeight='bold' variant='caption'>Special Thanks</Typography>
-                    <Typography variant='caption'>YouTube VODs from <Link target="_blank" href="https://www.youtube.com/@Neuro-samaVods">Neuro-sama Official Vods</Link> and <Link target="_blank" href="https://www.youtube.com/@NArchiver">Neuro Archiver</Link></Typography>
-                    <Typography variant='caption'>Inspired by a librarian and a Minecraft mob</Typography>
-                    <Typography variant='caption'><Link href="mailto:libraryofladev@gmail.com">Contact</Link></Typography>
+                <Box textAlign='left' display='flex' flexDirection='column'>
+                    <Typography fontWeight='bold' variant='caption'><br/></Typography>
+                    <Typography component={InertiaLink} variant='caption' onClick={() => setAboutDialogOpen(true)}>About</Typography>
+                    <Typography component={InertiaLink} variant='caption' onClick={() => setCreditsDialogOpen(true)}>Credits</Typography>
+                    {aboutDialogComponent}
+                    {creditsDialogComponent}
                 </Box>
             </Box>
         </Box>
