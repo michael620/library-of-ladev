@@ -34,6 +34,9 @@ export default function SearchBarBase(props) {
             disabled={disabled || isLoading}
             value={text}
             slotProps={{
+                htmlInput: {
+                    'aria-label': 'Search'
+                },
                 input: {
                 startAdornment: (
                 <InputAdornment position="start">

@@ -8,21 +8,24 @@ Index.layout = (page) => <NewAppLayout children={page} />
 export default function Index() {
   return (
     <>
-      <Head title="Library of Ladev" />
-      <Box>
-        <Typography align='center' variant='h3'>Library of Ladev</Typography>
-        <Card sx={{ minWidth: 275 }, {margin: 2}}>
-        <CardContent>
-            <Typography align='center' sx={{marginBottom:2}}>An archive of stream VOD transcripts from the Twitch channel <Link target="_blank" href="https://www.twitch.tv/vedal987">vedal987</Link></Typography>
-            <Typography align='center' variant='h6'>Some example searches:</Typography>
-            <Stack sx={{marginTop: 1}} direction="column" spacing={1}>
-            <Link align='center' component={InertiaLink} href="/search?text=meow%20meow%20lol">meow meow lol</Link>
-            <Link align='center' component={InertiaLink} href="/search?text=Ten%20tin%20cans">Ten tin cans</Link>
-            <Link align='center' component={InertiaLink} href="/search?text=Thank%20you%20so%20much%20for%20the%20sub%20Archerist">Thank you so much for the sub Archerist</Link>
-            </Stack>
-        </CardContent>
-        </Card>
-      </Box>
+        <Head>
+            <title>Library of Ladev</title>
+            <meta name="description" content="A searchable database of Neuro-sama stream transcripts." />
+        </Head>
+        <Box>
+            <Typography align='center' variant='h3' component='h1'>Library of Ladev</Typography>
+            <Card sx={{ minWidth: 275 }, {margin: 2}}>
+            <CardContent>
+                <Typography align='center' sx={{marginBottom:2}}>An archive of stream VOD transcripts from the Twitch channel <Link target="_blank" href="https://www.twitch.tv/vedal987">vedal987</Link></Typography>
+                <Typography align='center' variant='h6' component='h2'>Some example searches:</Typography>
+                <Stack sx={{marginTop: 1}} direction="column" spacing={1}>
+                <Link align='center' component={InertiaLink} href="/search?text=meow%20meow%20lol">meow meow lol</Link>
+                <Link align='center' component={InertiaLink} href="/search?text=Ten%20tin%20cans">Ten tin cans</Link>
+                <Link align='center' component={InertiaLink} href="/search?text=Thank%20you%20so%20much%20for%20the%20sub%20Archerist">Thank you so much for the sub Archerist</Link>
+                </Stack>
+            </CardContent>
+            </Card>
+        </Box>
     </>
   )
 }

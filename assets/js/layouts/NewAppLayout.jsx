@@ -69,7 +69,7 @@ export default function NewAppLayout({ children }) {
             <Typography variant='body1'>Use this <Link target="_blank" href="https://forms.gle/MNrJyYq17DRCkavUA">Google Form</Link> or <Link href="mailto:libraryofladev@gmail.com">email</Link> to report any issues or leave feedback for this website.</Typography>
         </DialogContent>
         <DialogActions>
-        <Button onClick={() => setAboutDialogOpen(false)}>Close</Button>
+        <Button aria-label='Close About Dialog' onClick={() => setAboutDialogOpen(false)}>Close</Button>
         </DialogActions>
     </Dialog>
     );
@@ -92,7 +92,7 @@ export default function NewAppLayout({ children }) {
             <Typography variant='body1'><br/>Inspired by a librarian and a Minecraft mob</Typography>
         </DialogContent>
         <DialogActions>
-        <Button onClick={() => setCreditsDialogOpen(false)}>Close</Button>
+        <Button aria-label='Close Credits Dialog' onClick={() => setCreditsDialogOpen(false)}>Close</Button>
         </DialogActions>
     </Dialog>
     );
@@ -104,7 +104,7 @@ export default function NewAppLayout({ children }) {
         <CssBaseline />
         <AppBar position="fixed">
             <Toolbar>
-            <IconButton onClick={onClickHome}>
+            <IconButton onClick={onClickHome} aria-label='Home'>
                 <HomeIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{margin: 1}}>
@@ -124,18 +124,17 @@ export default function NewAppLayout({ children }) {
         </Box>
         <Box>
             <Divider/>
-            <Box paddingTop='1rem' display='flex' flexDirection='row' justifyContent='start' gap={2}>
+            <Box paddingTop='0.5rem' display='flex' flexDirection='column' justifyContent='start' gap={2}>
                 <Box textAlign='left' display='flex' flexDirection='column'>
                     <Typography fontWeight='bold' variant='caption'>Site Map</Typography>
-                    <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
-                    <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
-                </Box>
-                <Box textAlign='left' display='flex' flexDirection='column'>
-                    <Typography fontWeight='bold' variant='caption'><br/></Typography>
-                    <Typography component={InertiaLink} variant='caption' onClick={() => setAboutDialogOpen(true)}>About</Typography>
-                    <Typography component={InertiaLink} variant='caption' onClick={() => setCreditsDialogOpen(true)}>Credits</Typography>
-                    {aboutDialogComponent}
-                    {creditsDialogComponent}
+                    <Box textAlign='left' display='flex' flexDirection='row' gap={2}>
+                        <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
+                        <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
+                        <Typography component={InertiaLink} variant='caption' onClick={() => setAboutDialogOpen(true)}>About</Typography>
+                        <Typography component={InertiaLink} variant='caption' onClick={() => setCreditsDialogOpen(true)}>Credits</Typography>
+                        {aboutDialogComponent}
+                        {creditsDialogComponent}
+                    </Box>
                 </Box>
             </Box>
         </Box>

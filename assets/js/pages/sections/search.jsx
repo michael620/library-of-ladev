@@ -121,7 +121,10 @@ export default function Search(props) {
     );
     return (
     <Box>
-    <Head title="Library of Ladev - Search" />
+    <Head>
+        <title>Library of Ladev - Search</title>
+        <meta name="description" content="Browse and search Neuro-sama stream transcripts." />
+    </Head>
     <SearchBar
         isLoading={isLoading}
         setIsLoading={setIsLoading}
