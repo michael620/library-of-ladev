@@ -65,8 +65,8 @@ export default function NewAppLayout({ children }) {
         <DialogTitle>About</DialogTitle>
         <DialogContent>
             <Typography gutterBottom variant="body1">This is a fan-made project and is not affiliated with Neuro-sama or Vedal.</Typography>
-            <Typography gutterBottom variant='body1'>You can follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link>.</Typography>
-            <Typography variant='body1'>Use this <Link target="_blank" href="https://forms.gle/MNrJyYq17DRCkavUA">Google Form</Link> or <Link href="mailto:libraryofladev@gmail.com">email</Link> to report any issues or leave feedback for this website.</Typography>
+            <Typography gutterBottom variant='body1'>Follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link>.</Typography>
+            <Typography variant='body1'>Report issues or leave feedback via <Link href="mailto:libraryofladev@gmail.com">email</Link>.</Typography>
         </DialogContent>
         <DialogActions>
         <Button aria-label='Close About Dialog' onClick={() => setAboutDialogOpen(false)}>Close</Button>

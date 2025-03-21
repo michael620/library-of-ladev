@@ -64,6 +64,7 @@ module.exports = {
                 await Transcript.create({ owner: video.id, text: rawText });
                 await sails.rm(txtFile.fd);
             }
+            sails.log(`Uploaded ${tsvFiles.length} files.`);
         } else {
             sails.log(`video_metadata_file not found`);
             for (const uploadedFile of uploadedFiles) {
