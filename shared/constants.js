@@ -71,20 +71,25 @@ const TAGS = {
     // Cameos
     'Alex (cameo)': CAMEOS,
     'Anny (cameo)': CAMEOS,
+    'Bao (cameo)': CAMEOS,
     'BTMC (cameo)': CAMEOS,
     'Camila (cameo)': CAMEOS,
     'Cerber (cameo)': CAMEOS,
+    'chrchie (cameo)': CAMEOS,
     'Ellie_Minibot (cameo)': CAMEOS,
     'Evil (cameo)': CAMEOS,
     'Filian (cameo)': CAMEOS,
     'HannahHyrule (cameo)': CAMEOS,
     'KokoNuts (cameo)': CAMEOS,
     'LaynaLazar (cameo)': CAMEOS,
+    'MageMimi (cameo)': CAMEOS,
     'MinikoMew (cameo)': CAMEOS,
     'Neuro (cameo)': CAMEOS,
+    'Numi (cameo)': CAMEOS,
     'QueenPB (cameo)': CAMEOS,
     'Toma (cameo)': CAMEOS,
-    'Vedal (cameo)': CAMEOS
+    'Vedal (cameo)': CAMEOS,
+    'Zentreya (cameo)': CAMEOS
 };
 
 const FETCH_TYPE = {
