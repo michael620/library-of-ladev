@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Divider from '@mui/material/Divider';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -31,7 +33,10 @@ export default function NewAppLayout({ children }) {
         prefersDarkMode ? true : false
     );
     const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
-    const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+    const [tabValue, setTabValue] = useState(0);
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
+    };
     const theme = useMemo(() =>
         createTheme({
             palette: {
@@ -64,35 +69,41 @@ export default function NewAppLayout({ children }) {
     >
         <DialogTitle>About</DialogTitle>
         <DialogContent>
-            <Typography gutterBottom variant="body1">This is a fan-made project and is not affiliated with Neuro-sama or Vedal.</Typography>
-            <Typography gutterBottom variant='body1'>Follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1330620448928567508">Neuro-sama's Discord server</Link>.</Typography>
-            <Typography variant='body1'>Report issues or leave feedback via <Link href="mailto:libraryofladev@gmail.com">email</Link>.</Typography>
+            <Tabs value={tabValue} onChange={handleTabChange} sx={{marginBottom: '1rem'}}>
+            <Tab label="Contact" />
+            <Tab label="Credits" />
+            <Tab label="Legal" />
+            </Tabs>
+            {tabValue === 0 ?
+            <>
+                <Typography gutterBottom variant='body1'>Follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1337595628607242282">Neuro-sama's Discord server</Link>.</Typography>
+                <Typography variant='body1'>Report issues or leave feedback via <Link href="mailto:libraryofladev@gmail.com">email</Link>.</Typography>
+            </> : ''
+            }
+            {tabValue === 1 ?
+            <>
+                <Typography>VODs are from the following channels:</Typography>
+                <Typography><Link target="_blank" href="https://www.youtube.com/@NArchiver">Neuro Archiver</Link></Typography>
+                <Typography><Link target="_blank" href="https://www.youtube.com/@Neuro-samaVods">Neuro-sama Official Vods</Link></Typography>
+                <Typography><Link target="_blank" href="https://www.youtube.com/@Neuro-samaUnofficialVODs">Neuro-sama Unofficial VODs</Link></Typography>
+                <Typography><Link target="_blank" href="https://www.youtube.com/@cpol.archive">cpol.archive</Link></Typography>
+                <Typography><Link target="_blank" href="https://www.youtube.com/@neuro-samafullstreamvod">Neuro-sama Full Stream VOD</Link></Typography>
+                <Typography variant='body1'><br/>Inspired by a librarian and a Minecraft mob</Typography>
+            </> : ''
+            }
+            {tabValue === 2 ?
+            <>
+                <Typography variant="body1"><b>Privacy Policy</b></Typography>
+                <Typography variant='body2'><b>Data and information</b>: This site does not collect, store, or process any personal data.</Typography>
+                <Typography variant="body1"><b>Terms of Use</b></Typography>
+                <Typography variant='body2'><b>Non-affiliation</b>: This site is a fan-made project and is not affiliated with Neuro-sama, Vedal, or any related entities.</Typography>
+                <Typography variant='body2'><b>Content and liability</b>: All information on this site is provided "as is" without warranties of any kind. The site does not guarantee the accuracy, completeness, or reliability of any content and is not liable for any errors or omissions.</Typography>
+                <Typography variant='body2'><b>Third-party content</b>: This site may contain embedded videos or links to external websites and is not responsible for the content, policies, or practices of third-party services.</Typography>
+            </> : ''
+            }
         </DialogContent>
         <DialogActions>
         <Button aria-label='Close About Dialog' onClick={() => setAboutDialogOpen(false)}>Close</Button>
-        </DialogActions>
-    </Dialog>
-    );
-
-    const creditsDialogComponent = (
-    <Dialog
-        open={creditsDialogOpen}
-        onClose={() => setCreditsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-    >
-        <DialogTitle>Special Thanks</DialogTitle>
-        <DialogContent>
-            <Typography>VODs are from the following channels:</Typography>
-            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@NArchiver">Neuro Archiver</Link></Typography>
-            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@Neuro-samaVods">Neuro-sama Official Vods</Link></Typography>
-            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@Neuro-samaUnofficialVODs">Neuro-sama Unofficial VODs</Link></Typography>
-            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@cpol.archive">cpol.archive</Link></Typography>
-            <Typography component='li'><Link target="_blank" href="https://www.youtube.com/@neuro-samafullstreamvod">Neuro-sama Full Stream VOD</Link></Typography>
-            <Typography variant='body1'><br/>Inspired by a librarian and a Minecraft mob</Typography>
-        </DialogContent>
-        <DialogActions>
-        <Button aria-label='Close Credits Dialog' onClick={() => setCreditsDialogOpen(false)}>Close</Button>
         </DialogActions>
     </Dialog>
     );
@@ -131,9 +142,7 @@ export default function NewAppLayout({ children }) {
                         <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
                         <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
                         <Typography component={InertiaLink} variant='caption' onClick={() => setAboutDialogOpen(true)}>About</Typography>
-                        <Typography component={InertiaLink} variant='caption' onClick={() => setCreditsDialogOpen(true)}>Credits</Typography>
                         {aboutDialogComponent}
-                        {creditsDialogComponent}
                     </Box>
                 </Box>
             </Box>
