@@ -11,6 +11,7 @@ import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import LinearProgress from '@mui/material/LinearProgress';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
@@ -78,12 +79,19 @@ export default function SearchList(props) {
         player.current = event.target;
     }
 
-    const searchResultText = !props.searchResult?.length ? `No results for "${props.text}".` : props.noMoreResultsToFetch ?
-    `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
-    `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
+    let searchResultText;
+    if (!props.text) {
+        searchResultText = 'Showing all videos. Use the search bar above to narrow results.';
+    } else if (!props.searchResult?.length) {
+        searchResultText = `No results for "${props.text}".`;
+    } else {
+        searchResultText = props.noMoreResultsToFetch ?
+        `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
+        `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
+    }
 
     return (
-        props.text ? <>
+        props.searchResult?.length ? <>
         <ListSubheader component="div" sx={{zIndex: 0, lineHeight: 1.5}}>
             {searchResultText}
         </ListSubheader>
@@ -91,8 +99,15 @@ export default function SearchList(props) {
             sx={{ width: '100%', bgcolor: 'background.paper' }}
         >
             {props.searchResult.map((video, i) => {
-                const { url, title, date, total, subtitles, matches } = video;
-                const numMatches = subtitles ? Number(total) : matches.length;
+                const { url, title, date, total, subtitles } = video;
+                let numMatches;
+                if (!props.text) {
+                    numMatches = undefined;
+                } else if (subtitles) {
+                    numMatches = Number(total);
+                } else if (video.matches) {
+                    numMatches = matches.length;
+                }
                 return (
                     <Box key={url}>
                     <ListItemButton onClick={(e) => handleClickSubtitleListItem(url)}>
@@ -107,7 +122,7 @@ export default function SearchList(props) {
                                         <Chip key={i} label={tag} size="small" color={TAGS[tag].color}/>
                                     ))}
                                 </Box> : ''}
-                                <span>{`${numMatches} matches`}</span>
+                                {numMatches !== undefined ? <span>{`${numMatches} matches`}</span> : ''}
                             </Box>
                         } />
                         {open===url ? <ExpandLess /> : <ExpandMore />}
@@ -138,7 +153,11 @@ export default function SearchList(props) {
                                     </ListItem>
                                 )) : ''
                             }
-                            {(video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => props.onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
+                            {((!video.matches && !video.subtitles) || video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => props.onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
+                            {(!video.matches && !video.subtitles && !video.noMoreSubtitlesToFetch) ?
+                            <>
+                                <Box padding='1rem'><Button loading={isLoadingSubtitle} onClick={async () => await props.fetchSubtitles(i, url)}>Load subtitles</Button></Box>
+                            </> : ''}
                         </Box>
                         </List>
                         </Paper>

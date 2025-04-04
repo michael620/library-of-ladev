@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import AppBar from '@mui/material/AppBar';
 import HomeIcon from '@mui/icons-material/Home';
 import IconButton from '@mui/material/IconButton';
-import { Link as InertiaLink, router, usePage } from '@inertiajs/react'
+import { Link as InertiaLink, router } from '@inertiajs/react'
 import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -20,14 +20,10 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import SearchBarBase from '@/components/SearchBarBase.jsx';
 
 const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 
 export default function NewAppLayout({ children }) {
-    const url = usePage().url;
-    const showSearchBar = !url?.startsWith('/search');
-    const [isLoading, setIsLoading] = useState(false);
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const [isDarkMode, setIsDarkMode] = useState(
         prefersDarkMode ? true : false
@@ -44,20 +40,9 @@ export default function NewAppLayout({ children }) {
             },
     }), [isDarkMode]);
 
-    useEffect(() => {
-        setIsLoading(false);
-    }, [url]);
-
     const onClickHome = (e) => {
         e.preventDefault();
         router.visit('/');
-    };
-
-    const onSubmit = async (text) => {
-        setIsLoading(true);
-        router.visit('/search', {
-            data: { text }
-        });
     };
 
     const aboutDialogComponent = (
@@ -121,12 +106,6 @@ export default function NewAppLayout({ children }) {
             <Typography variant="h6" noWrap component="div" sx={{margin: 1}}>
                 Library of Ladev
             </Typography>
-            {showSearchBar ? <Box marginLeft='auto'>
-                <SearchBarBase
-                    showFullSearchBar={false}
-                    onSubmit={onSubmit}
-                    isLoading={isLoading}
-                /></Box> : ''}
             </Toolbar>
         </AppBar>
         <Box flex='1'>

@@ -113,15 +113,17 @@ const processRawResult = (rawResult) => {
             url,
             title,
             date,
-            total: row.total_count,
-            tags: sortTags(tags),
-            subtitles: []
+            tags: sortTags(tags)
         };
-        entry.subtitles.push({
-            startTime: row.startTime,
-            timestamp: formatSeconds(row.startTime),
-            text: row.text
-        });
+        if (row.text) {
+            entry.total = entry.total || row.total_count;
+            entry.subtitles = entry.subtitles || [];
+            entry.subtitles.push({
+                startTime: row.startTime,
+                timestamp: formatSeconds(row.startTime),
+                text: row.text
+            });
+        }
         map.set(url, entry);
     }
     const results = Array.from(map.values());

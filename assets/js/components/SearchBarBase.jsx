@@ -8,7 +8,7 @@ import SendIcon from '@mui/icons-material/Send';
 import SearchIcon from '@mui/icons-material/Search';
 
 export default function SearchBarBase(props) {
-    const { showFullSearchBar, disabled, isLoading } = props;
+    const { showFullSearchBar, disabled, isLoading, placeholder } = props;
     const [text, setText] = useState(props.text || '');
     const onChangeText = (event) => {
         setText(event?.target?.value);
@@ -26,6 +26,7 @@ export default function SearchBarBase(props) {
     <>
     <FormControl fullWidth={showFullSearchBar} style={{flexDirection: 'row'}}>
         <TextField
+            placeholder={placeholder}
             variant="outlined"
             fullWidth={showFullSearchBar}
             size={showFullSearchBar ? 'medium' : 'small'}
@@ -45,7 +46,7 @@ export default function SearchBarBase(props) {
                 }
             }}
         />
-        {showFullSearchBar ? <IconButton onClick={onSubmit} disabled={disabled || isLoading || !text}>
+        {showFullSearchBar ? <IconButton onClick={onSubmit} disabled={disabled || isLoading}>
             <SendIcon />
         </IconButton> : ''}
     </FormControl>

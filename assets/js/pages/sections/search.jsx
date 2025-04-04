@@ -14,7 +14,7 @@ export default function Search(props) {
     const [searchResult, setSearchResult] = useState(props.searchResult);
     const [subtitleResult, setSubtitleResult] = useState(null);
     const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
-    const [showTags, setShowTags] = useState(props.searchParams?.showTags || false);
+    const [showTags, setShowTags] = useState(localStorage.getItem('settings-showTags') === 'true');
     const observer = useRef(null);
     const observerSubtitle = useRef(null);
 
@@ -74,7 +74,6 @@ export default function Search(props) {
                         i
                     });
                 }
-                setIsLoadingSubtitle(false);
             }
         });
     };
@@ -86,6 +85,7 @@ export default function Search(props) {
             newResults[subtitleResult.i].subtitles = subtitleResult.subtitles;
             newResults[subtitleResult.i].noMoreSubtitlesToFetch = true;
             setSearchResult(newResults);
+            setIsLoadingSubtitle(false);
         } else {
             console.log('something went wrong with fetching subtitles');
         }
@@ -142,6 +142,7 @@ export default function Search(props) {
             showTags={showTags}
             isLoading={isLoading}
             onFetchMoreSubtitles={onFetchMoreSubtitles}
+            fetchSubtitles={fetchSubtitles}
             isLoadingSubtitle={isLoadingSubtitle}
         />
     </Paper>

@@ -99,6 +99,7 @@ export default function SearchBar(props) {
         setIsFullTextSearch(event.target.checked);
     };
     const toggleShowTags = () => {
+        localStorage.setItem('settings-showTags', !showTags);
         setShowTags(!showTags);
     };
 
@@ -127,9 +128,6 @@ export default function SearchBar(props) {
         }
         if (excludeTags.length) {
             data.excludeTags = excludeTags;
-        }
-        if (showTags) {
-            data.showTags = showTags;
         }
         router.visit('/search', {
             data
