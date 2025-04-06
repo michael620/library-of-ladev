@@ -1,4 +1,5 @@
-import { memo, useRef, useState, useCallback } from 'react';
+import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import { useTheme } from '@mui/material/styles';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -22,10 +23,22 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { TAGS } from '../../../shared/constants';
 
 const SubtitleListItem = memo((props) => {
-    const { handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
+    const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
+    const theme = useTheme();
     return (
         <>
-            <ListItem style={props.style} sx={{paddingTop: 0, paddingBottom: 0}} secondaryAction={
+            <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style}
+            sx={(theme) => (isActive ? {
+                backgroundColor:'rgba(0, 0, 0, 0.25)',
+                borderLeft: `0.25rem solid ${theme.palette.primary.main}`,
+                transition: 'background-color 1s ease',
+                paddingTop: 0,
+                paddingBottom: 0
+            } : {
+                paddingTop: 0,
+                paddingBottom: 0
+            })}
+            secondaryAction={
                 <IconButton edge="end" aria-label="copy" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, url, startTime)}>
                     <ContentCopyIcon />
                 </IconButton>
@@ -46,10 +59,12 @@ const SubtitleListItem = memo((props) => {
 });
 
 export default function SearchList(props) {
-    const { isLoading, isLoadingSubtitle, showTags } = props;
+    const { isLoading, isLoadingSubtitle, showTags, syncSubtitles } = props;
     const player = useRef(null);
+    const subtitleContainerRef = useRef(null);
     const [open, setOpen] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [currentTime, setCurrentTime] = useState(null);
 
     const handleClickSubtitleListItem = useCallback((key) => {
         if (open === key) {
@@ -68,6 +83,30 @@ export default function SearchList(props) {
         navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${url}&t=${startTime}s`);
         setSnackbarOpen(true);
     }, [snackbarOpen]);
+
+    useEffect(() => {
+        let interval;
+        if (syncSubtitles && player.current) {
+            interval = setInterval(() => {
+                const currentTime = player.current.getCurrentTime();
+                setCurrentTime(Math.round(currentTime));
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [syncSubtitles, player.current]);
+
+    useEffect(() => {
+        if (open && currentTime !== null) {
+            const subtitleContainer = subtitleContainerRef.current;
+            const currentSubtitle = document.querySelector(`[data-subtitle-id="${open}_${currentTime}"]`);
+            if (subtitleContainer && currentSubtitle) {
+                subtitleContainer.scrollTo({
+                    top: currentSubtitle.offsetTop - subtitleContainer.offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    }, [open, currentTime]);
 
     const opts = {
         playerVars: {
@@ -91,7 +130,7 @@ export default function SearchList(props) {
     }
 
     return (
-        props.searchResult?.length ? <>
+        props.searchResult ? <>
         <ListSubheader component="div" sx={{zIndex: 0, lineHeight: 1.5}}>
             {searchResultText}
         </ListSubheader>
@@ -133,7 +172,7 @@ export default function SearchList(props) {
                             <YouTube videoId={url} opts={opts} onReady={_onReady}/>
                         </Box>
                         <List component="div" disablePadding>
-                        <Box sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <Box ref={subtitleContainerRef} sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
                             {
                                 video.subtitles ? video.subtitles.map((subtitle, j) => (
                                     <SubtitleListItem
@@ -142,6 +181,7 @@ export default function SearchList(props) {
                                         text={subtitle.text}
                                         startTime={subtitle.startTime}
                                         timestamp={subtitle.timestamp}
+                                        isActive={currentTime >= subtitle.startTime && currentTime < (video.subtitles[j+1] ? video.subtitles[j+1].startTime : Infinity)}
                                         url={url}
                                         handleClickCopy={handleClickCopy}
                                         snackbarOpen={snackbarOpen}

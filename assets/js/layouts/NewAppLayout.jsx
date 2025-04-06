@@ -83,7 +83,7 @@ export default function NewAppLayout({ children }) {
                 <Typography variant="body1"><b>Terms of Use</b></Typography>
                 <Typography variant='body2'><b>Non-affiliation</b>: This site is a fan-made project and is not affiliated with Neuro-sama, Vedal, or any related entities.</Typography>
                 <Typography variant='body2'><b>Content and liability</b>: All information on this site is provided "as is" without warranties of any kind. The site does not guarantee the accuracy, completeness, or reliability of any content and is not liable for any errors or omissions.</Typography>
-                <Typography variant='body2'><b>Third-party content</b>: This site may contain embedded videos or links to external websites and is not responsible for the content, policies, or practices of third-party services.</Typography>
+                <Typography variant='body2'><b>Third-party content</b>: This site may contain third-party links and is not responsible for the policies or materials of the third-party.</Typography>
             </> : ''
             }
         </DialogContent>

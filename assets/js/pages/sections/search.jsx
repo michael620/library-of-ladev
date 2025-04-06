@@ -15,6 +15,7 @@ export default function Search(props) {
     const [subtitleResult, setSubtitleResult] = useState(null);
     const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
     const [showTags, setShowTags] = useState(localStorage.getItem('settings-showTags') === 'true');
+    const [syncSubtitles, setSyncSubtitles] = useState(localStorage.getItem('settings-syncSubtitles') === 'true');
     const observer = useRef(null);
     const observerSubtitle = useRef(null);
 
@@ -132,6 +133,8 @@ export default function Search(props) {
         showFullSearchBar={true}
         showTags={showTags}
         setShowTags={setShowTags}
+        syncSubtitles={syncSubtitles}
+        setSyncSubtitles={setSyncSubtitles}
     />
     <Paper elevation={1}>
         <SearchList
@@ -144,6 +147,7 @@ export default function Search(props) {
             onFetchMoreSubtitles={onFetchMoreSubtitles}
             fetchSubtitles={fetchSubtitles}
             isLoadingSubtitle={isLoadingSubtitle}
+            syncSubtitles={syncSubtitles}
         />
     </Paper>
     </Box>

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
+import Switch from '@mui/material/Switch';
 import HelpIcon from '@mui/icons-material/Help';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { router } from '@inertiajs/react';
 import TuneIcon from '@mui/icons-material/Tune';
+import SettingsIcon from '@mui/icons-material/Settings';
 import Popper from '@mui/material/Popper';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -64,7 +66,7 @@ const CustomAutocomplete = (props) => {
 };
 
 export default function SearchBar(props) {
-    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags } = props;
+    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, syncSubtitles, setSyncSubtitles } = props;
     const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = useState(props.searchParams?.title || '');
     const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
@@ -73,19 +75,23 @@ export default function SearchBar(props) {
     const [excludeTags, setExcludeTags] = useState(props.searchParams?.excludeTags || []);
     const [disabled, setDisabled] = useState(false);
     const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-    const [anchorEl, setAnchorEl] = useState(null);
+    const [advancedSearchAnchorEl, setAdvancedSearchAnchorEl] = useState(null);
+    const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
 
+    const toggleSettings = (event) => {
+        setSettingsAnchorEl(settingsAnchorEl ? null : event.currentTarget);
+    };
     const toggleAdvancedSearch = (event) => {
-        setAnchorEl(anchorEl ? null : event.currentTarget);
+        setAdvancedSearchAnchorEl(advancedSearchAnchorEl ? null : event.currentTarget);
     };
     const toggleHelpDialog = () => {
         setIsHelpDialogOpen(!isHelpDialogOpen);
     };
   
-    const isAdvancedSearchOpen = Boolean(anchorEl);
+    const isAdvancedSearchOpen = Boolean(advancedSearchAnchorEl);
+    const isSettingsOpen = Boolean(settingsAnchorEl);
 
     const handleReset = () => {
-        setIsFullTextSearch(false);
         setTitle('');
         setStartDate(null);
         setEndDate(null);
@@ -102,6 +108,10 @@ export default function SearchBar(props) {
         localStorage.setItem('settings-showTags', !showTags);
         setShowTags(!showTags);
     };
+    const toggleSyncSubtitles = () => {
+        localStorage.setItem('settings-syncSubtitles', !syncSubtitles);
+        setSyncSubtitles(!syncSubtitles);
+    };
 
     const onSubmit = async (text) => {
         if (disabled) {
@@ -109,7 +119,8 @@ export default function SearchBar(props) {
         }
         setIsHelpDialogOpen(false);
         setIsLoading(true);
-        setAnchorEl(null);
+        setSettingsAnchorEl(null);
+        setAdvancedSearchAnchorEl(null);
         const data = { text };
         if (isFullTextSearch) {
             data.isFullTextSearch = isFullTextSearch;
@@ -134,28 +145,54 @@ export default function SearchBar(props) {
         });
     };
 
-    const advancedSearchComponent = (
+    const settingsAndFiltersComponents = (
         <>
-        <Box display='flex' flexDirection='row' justifyContent='end'>
-            <Button variant="text" size="small" onClick={toggleAdvancedSearch} endIcon={<TuneIcon />}>Advanced Search</Button>
+        <Box display='flex' flexDirection='row' justifyContent='space-between'>
+            <Button variant="text" size="small" onClick={toggleSettings} endIcon={<SettingsIcon />}>Settings</Button>
+            <Button variant="text" size="small" onClick={toggleAdvancedSearch} endIcon={<TuneIcon />}>Filters</Button>
         </Box>
-        <Popper id={isAdvancedSearchOpen ? 'advanced-search-popper' : undefined} open={isAdvancedSearchOpen} anchorEl={anchorEl} placement='bottom-end'>
+        <Popper id={isSettingsOpen ? 'settings-popper' : undefined} open={isSettingsOpen} anchorEl={settingsAnchorEl} placement='bottom-start'>
             <Card>
-            <CardActions sx={{ justifyContent: 'end' }}>
-                <IconButton onClick={toggleHelpDialog}>
-                    <HelpIcon />
-                </IconButton>
-            </CardActions>
             <CardContent>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
             <Box display='flex' flexDirection='row' justifyContent='start'>
                 <FormControlLabel
-                    control={<Checkbox/>}
+                    control={<Switch/>}
                     checked={isFullTextSearch}
                     label={'Full Text Search'}
                     onChange={onChangeFullTextSearch}
                 />
+                <IconButton onClick={toggleHelpDialog}>
+                    <HelpIcon />
+                </IconButton>
             </Box>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                <FormControlLabel
+                    control={<Switch/>}
+                    checked={syncSubtitles}
+                    label={'Sync subtitles with player'}
+                    onChange={toggleSyncSubtitles}
+                />
+            </Box>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                <FormControlLabel
+                    control={<Switch/>}
+                    checked={showTags}
+                    label={'Show tags in search results'}
+                    onChange={toggleShowTags}
+                />
+            </Box>
+            </Box>
+            </CardContent>
+            <CardActions sx={{ justifyContent: 'end' }}>
+                <Button disabled={disabled} onClick={() => setSettingsAnchorEl(null)}>Ok</Button>
+            </CardActions>
+            </Card>
+        </Popper>
+        <Popper id={isAdvancedSearchOpen ? 'advanced-search-popper' : undefined} open={isAdvancedSearchOpen} anchorEl={advancedSearchAnchorEl} placement='bottom-end'>
+            <Card>
+            <CardContent>
+            <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                 <TextField
                     label={'Title'}
@@ -200,19 +237,11 @@ export default function SearchBar(props) {
                     label='Exclude Tags'
                 />
             </Box>
-            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                <FormControlLabel
-                    control={<Checkbox/>}
-                    checked={showTags}
-                    label={'Show tags in search results'}
-                    onChange={toggleShowTags}
-                />
-            </Box>
             </Box>
             </CardContent>
             <CardActions sx={{ justifyContent: 'end' }}>
                 <Button onClick={handleReset}>Reset</Button>
-                <Button disabled={disabled} onClick={() => setAnchorEl(null)}>Ok</Button>
+                <Button disabled={disabled} onClick={() => setAdvancedSearchAnchorEl(null)}>Ok</Button>
             </CardActions>
             </Card>
         </Popper>
@@ -237,7 +266,7 @@ export default function SearchBar(props) {
                     <b>Note</b>: Snippets attempt to highlight matched search terms, which doesn't work well if they match across a large context window.<br/>
                     <b>Tip</b>: You can use Full Text Search first, then search again once you find the exact sentence with Full Text Search off to locate the timestamp.<br/><br/>
                 </Typography>
-                <Typography variant="h6">Search syntax</Typography>
+                <Typography variant="h6">Search syntax (Full Text Search only)</Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>"quoted text"</b></Typography>
                 <Typography display='inline' variant="body1">: Matches the exact phrase<br/></Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>or</b></Typography>
@@ -260,6 +289,6 @@ export default function SearchBar(props) {
         text={props.searchParams?.text}
         isLoading={isLoading}
     />
-    {advancedSearchComponent}
+    {settingsAndFiltersComponents}
     </>);
 }
