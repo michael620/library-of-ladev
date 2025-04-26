@@ -263,9 +263,9 @@ export default function SearchBar(props) {
                 </Typography>
                 <Typography variant="h6">Search syntax (Default search)</Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>?</b></Typography>
-                <Typography display='inline' variant="body1">: Matches one character<br/></Typography>
+                <Typography display='inline' variant="body1">: Matches any single character<br/></Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>*</b></Typography>
-                <Typography display='inline' variant="body1">: Matches one or more characters<br/><br/></Typography>
+                <Typography display='inline' variant="body1">: Matches zero or more characters<br/><br/></Typography>
                 <Typography variant="h6">Full Text Search</Typography>
                 <Typography variant="body1">
                     Search from the entire video transcript, no timestamp<br/>
