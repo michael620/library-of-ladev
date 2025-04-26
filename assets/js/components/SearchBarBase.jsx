@@ -11,7 +11,7 @@ export default function SearchBarBase(props) {
     const { showFullSearchBar, disabled, isLoading, placeholder } = props;
     const [text, setText] = useState(props.text || '');
     const onChangeText = (event) => {
-        setText(event?.target?.value);
+        setText((event?.target?.value || '').replace(/[^a-zA-Z0-9\s*?]/g, ''));
     };
     const onSubmit = (event) => {
         event.preventDefault();

@@ -99,7 +99,7 @@ export default function SearchBar(props) {
         setExcludeTags([]);
     };
     const onChangeTitle = (event) => {
-        setTitle(event?.target?.value);
+        setTitle((event?.target?.value || '').replace(/[^a-zA-Z0-9\s*?]/g, ''));
     };
     const onChangeFullTextSearch = (event) => {
         setIsFullTextSearch(event.target.checked);
@@ -155,6 +155,12 @@ export default function SearchBar(props) {
             <Card>
             <CardContent>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center'>
+                <Typography>Help</Typography>
+                <IconButton onClick={toggleHelpDialog}>
+                    <HelpIcon />
+                </IconButton>
+            </Box>
             <Box display='flex' flexDirection='row' justifyContent='start'>
                 <FormControlLabel
                     control={<Switch/>}
@@ -162,9 +168,6 @@ export default function SearchBar(props) {
                     label={'Full Text Search'}
                     onChange={onChangeFullTextSearch}
                 />
-                <IconButton onClick={toggleHelpDialog}>
-                    <HelpIcon />
-                </IconButton>
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                 <FormControlLabel
@@ -255,18 +258,21 @@ export default function SearchBar(props) {
             <DialogContent>
                 <Typography variant="h6">Default search</Typography>
                 <Typography variant="body1">
-                    Matches exactly what you type.<br/>
-                    <b>Results</b>: Matched sentences along with its timestamp.<br/>
+                    Searches for sentences along with its timestamp.<br/>
                     <b>Note</b>: Since timestamps are split by sentences, you may not find a phrase if it spans across multiple sentences.<br/><br/>
                 </Typography>
+                <Typography variant="h6">Search syntax (Default search)</Typography>
+                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>?</b></Typography>
+                <Typography display='inline' variant="body1">: Matches one character<br/></Typography>
+                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>*</b></Typography>
+                <Typography display='inline' variant="body1">: Matches one or more characters<br/><br/></Typography>
                 <Typography variant="h6">Full Text Search</Typography>
                 <Typography variant="body1">
-                    Search from the entire video transcript, with syntax support.<br/>
-                    <b>Results</b>: Matched snippets, no timestamp.<br/>
-                    <b>Note</b>: Snippets attempt to highlight matched search terms, which doesn't work well if they match across a large context window.<br/>
+                    Search from the entire video transcript, no timestamp<br/>
+                    <b>Note</b>: Snippets are ranked by relevance. It doesn't work well if the search terms match across a large context window.<br/>
                     <b>Tip</b>: You can use Full Text Search first, then search again once you find the exact sentence with Full Text Search off to locate the timestamp.<br/><br/>
                 </Typography>
-                <Typography variant="h6">Search syntax (Full Text Search only)</Typography>
+                <Typography variant="h6">Search syntax (Full Text Search)</Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>"quoted text"</b></Typography>
                 <Typography display='inline' variant="body1">: Matches the exact phrase<br/></Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>or</b></Typography>
