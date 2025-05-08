@@ -62,7 +62,8 @@ export default function NewAppLayout({ children }) {
             {tabValue === 0 ?
             <>
                 <Typography gutterBottom variant='body1'>Follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1337595628607242282">Neuro-sama's Discord server</Link>.</Typography>
-                <Typography variant='body1'>Report issues or leave feedback via <Link href="mailto:libraryofladev@gmail.com">email</Link>.</Typography>
+                <Typography gutterBottom variant='body1'>Report issues or leave feedback via <Link href="mailto:libraryofladev@gmail.com">email</Link>.</Typography>
+                <Typography variant='body1'>This project is open source and available on <Link target="_blank" href="https://github.com/michael620/library-of-ladev">Github</Link>.</Typography>
             </> : ''
             }
             {tabValue === 1 ?
