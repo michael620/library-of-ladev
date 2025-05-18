@@ -26,7 +26,6 @@ import Chip from '@mui/material/Chip';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import SearchBarBase from '@/components/SearchBarBase.jsx';
 import dayjs from 'dayjs';
-import { TAGS } from '../../../shared/constants';
 
 const minDate = dayjs('2022-12-19');
 const maxDate = dayjs();
@@ -44,9 +43,12 @@ const CustomAutocomplete = (props) => {
             setValue(newValue);
         }}
         id="tags"
-        options={Object.keys(TAGS)}
+        options={Object.keys(props.tags).sort((a, b) => {
+            if (props.tags[a].order !== props.tags[b].order) return props.tags[a].order - props.tags[b].order;
+            return a.localeCompare(b);
+        })}
         getOptionLabel={(option) => option}
-        groupBy={(option) => TAGS[option].text}
+        groupBy={(option) => props.tags[option].text}
         renderTags={(v, getTagProps) =>
             v.map((option, index) => (
                 <Chip
@@ -54,7 +56,7 @@ const CustomAutocomplete = (props) => {
                     key={option}
                     label={option}
                     sx={{
-                        backgroundColor: theme.palette[TAGS[option].color][theme.palette.mode],
+                        backgroundColor: theme.palette[props.tags[option].color][theme.palette.mode],
                     }}
                 />
             ))
@@ -231,6 +233,7 @@ export default function SearchBar(props) {
                     value={includeTags}
                     setValue={setIncludeTags}
                     label='Include Tags'
+                    tags={props.tags}
                 />
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
@@ -238,6 +241,7 @@ export default function SearchBar(props) {
                     value={excludeTags}
                     setValue={setExcludeTags}
                     label='Exclude Tags'
+                    tags={props.tags}
                 />
             </Box>
             </Box>

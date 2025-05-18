@@ -135,6 +135,7 @@ export default function Search(props) {
         setShowTags={setShowTags}
         syncSubtitles={syncSubtitles}
         setSyncSubtitles={setSyncSubtitles}
+        tags={props.tags}
     />
     <Paper elevation={1}>
         <SearchList
@@ -148,6 +149,7 @@ export default function Search(props) {
             fetchSubtitles={fetchSubtitles}
             isLoadingSubtitle={isLoadingSubtitle}
             syncSubtitles={syncSubtitles}
+            tags={props.tags}
         />
     </Paper>
     </Box>

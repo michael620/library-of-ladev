@@ -20,7 +20,6 @@ import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
 import YouTube from 'react-youtube';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { TAGS } from '../../../shared/constants';
 
 const SubtitleListItem = memo((props) => {
     const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
@@ -158,7 +157,7 @@ export default function SearchList(props) {
                                 {(showTags && video.tags.length) ?
                                 <Box display='flex' flexDirection='row' flexWrap='wrap' sx={{gap: 1}}>
                                     {video.tags.map((tag, i) => (
-                                        <Chip key={i} label={tag} size="small" color={TAGS[tag].color}/>
+                                        <Chip key={i} label={tag} size="small" color={props.tags[tag].color}/>
                                     ))}
                                 </Box> : ''}
                                 {numMatches !== undefined ? <span>{`${numMatches} matches`}</span> : ''}

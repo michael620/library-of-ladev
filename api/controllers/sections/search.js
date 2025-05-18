@@ -96,7 +96,8 @@ module.exports = {
                 endDate,
                 includeTags,
                 excludeTags
-            }
+            },
+            tags: sails.hooks['db-refresh'].getTags()
         };
         const { FETCH_SIZE, FETCH_TYPE } = require('../../../shared/constants');
         const { processRawResult, processRawResultFTS, processRawResultSubtitle } = require('../../utils/utils');
@@ -195,7 +196,7 @@ module.exports = {
             if (props.searchResult.length < FETCH_SIZE) {
                 props.noMoreResultsToFetch = true;
             }
-        } 
+        }
         return { page: 'sections/search', props }
     }
   }

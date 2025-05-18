@@ -40,12 +40,16 @@ const createVideoAndSubtitle = async (fd, metadata) => {
     const { url, title, date, tags } = metadata;
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
+    const { TAG_TYPES } = require('../../shared/constants');
     const video = await Video.findOrCreate({ url }, { url, title, date });
     const tagsArr = tags.split(', ');
     const sqls = [];
     for (const tag of tagsArr) {
+        const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
         sqls.push(`
-            INSERT INTO tag (name) VALUES ('${tag}') ON CONFLICT (name) DO NOTHING;
+            INSERT INTO tag (name, tag_type)
+            VALUES ('${tag}', '${tagType}')
+            ON CONFLICT (name) DO NOTHING;
         `);
     }
     const formattedTags = tagsArr.map(item => `'${item}'`).join(', ');
@@ -54,11 +58,13 @@ const createVideoAndSubtitle = async (fd, metadata) => {
         SELECT v.id, t.id
         FROM tag t
         JOIN video v ON v.url = '${url}'
-        WHERE t.name IN (${formattedTags});
+        WHERE t.name IN (${formattedTags})
+        ON CONFLICT DO NOTHING;
     `);
     for (const sql of sqls) {
         await sails.sendNativeQuery(sql);
     }
+    await sails.hooks['db-refresh'].fetchAndUpdate();
     return new Promise(function(resolve,reject){
         const subtitles = [];
         const speakers = new Set();
@@ -94,14 +100,17 @@ const formatSeconds = (seconds) => {
 
 const sortTags = (tags) => {
     if (!tags) return [];
-    const { TAGS } = require('../../shared/constants');
+    const TAGS = sails.hooks['db-refresh'].getTags();
     const filteredTags = tags.split(', ').filter(tag => {
         if (!TAGS[tag]) {
             sails.log(`Missing tag ${tag}`);
             return false;
         }
         return true;
-    }).sort((a, b) => TAGS[a].order - TAGS[b].order);
+    }).sort((a, b) => {
+        if (TAGS[a].order !== TAGS[b].order) return TAGS[a].order - TAGS[b].order;
+        return a.localeCompare(b);
+    });
     return filteredTags;
 }
 
