@@ -16,6 +16,7 @@ export default function Search(props) {
     const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
     const [showTags, setShowTags] = useState(localStorage.getItem('settings-showTags') === 'true');
     const [syncSubtitles, setSyncSubtitles] = useState(localStorage.getItem('settings-syncSubtitles') === 'true');
+    const [showMatchPreviews, setShowMatchPreviews] = useState(localStorage.getItem('settings-showMatchPreviews') === 'true');
     const observer = useRef(null);
     const observerSubtitle = useRef(null);
 
@@ -135,6 +136,8 @@ export default function Search(props) {
         setShowTags={setShowTags}
         syncSubtitles={syncSubtitles}
         setSyncSubtitles={setSyncSubtitles}
+        showMatchPreviews={showMatchPreviews}
+        setShowMatchPreviews={setShowMatchPreviews}
         tags={props.tags}
     />
     <Paper elevation={1}>
@@ -144,6 +147,7 @@ export default function Search(props) {
             onFetchMoreResults={onFetchMoreResults}
             noMoreResultsToFetch={noMoreResultsToFetch}
             showTags={showTags}
+            showMatchPreviews={showMatchPreviews}
             isLoading={isLoading}
             onFetchMoreSubtitles={onFetchMoreSubtitles}
             fetchSubtitles={fetchSubtitles}

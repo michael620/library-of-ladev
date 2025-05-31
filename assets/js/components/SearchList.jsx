@@ -58,7 +58,7 @@ const SubtitleListItem = memo((props) => {
 });
 
 export default function SearchList(props) {
-    const { isLoading, isLoadingSubtitle, showTags, syncSubtitles } = props;
+    const { isLoading, isLoadingSubtitle, showTags, syncSubtitles, showMatchPreviews } = props;
     const player = useRef(null);
     const subtitleContainerRef = useRef(null);
     const [open, setOpen] = useState(null);
@@ -144,7 +144,7 @@ export default function SearchList(props) {
                 } else if (subtitles) {
                     numMatches = Number(total);
                 } else if (video.matches) {
-                    numMatches = matches.length;
+                    numMatches = video.matches.length;
                 }
                 return (
                     <Box key={url}>
@@ -160,7 +160,13 @@ export default function SearchList(props) {
                                         <Chip key={i} label={tag} size="small" color={props.tags[tag].color}/>
                                     ))}
                                 </Box> : ''}
-                                {numMatches !== undefined ? <span>{`${numMatches} matches`}</span> : ''}
+                                {numMatches !== undefined ? <span>{`${numMatches} match${numMatches > 1 ? 'es' : ''}`}</span> : ''}
+                                {showMatchPreviews ?
+                                video.subtitles ? video.subtitles.slice(0, 3).map((subtitle, j) => (
+                                    <Typography noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }}>{subtitle.timestamp}: {subtitle.text}</Typography>
+                                )) : video.matches ? video.matches.slice(0, 3).map((match, j) => (
+                                    <Typography noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }} dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>
+                                )) : '' : ''}
                             </Box>
                         } />
                         {open===url ? <ExpandLess /> : <ExpandMore />}

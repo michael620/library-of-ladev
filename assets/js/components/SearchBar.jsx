@@ -68,7 +68,7 @@ const CustomAutocomplete = (props) => {
 };
 
 export default function SearchBar(props) {
-    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, syncSubtitles, setSyncSubtitles } = props;
+    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, syncSubtitles, setSyncSubtitles, showMatchPreviews, setShowMatchPreviews } = props;
     const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = useState(props.searchParams?.title || '');
     const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
@@ -101,7 +101,7 @@ export default function SearchBar(props) {
         setExcludeTags([]);
     };
     const onChangeTitle = (event) => {
-        setTitle((event?.target?.value || '').replace(/[^a-zA-Z0-9\s*?]/g, ''));
+        setTitle(event?.target?.value || '');
     };
     const onChangeFullTextSearch = (event) => {
         setIsFullTextSearch(event.target.checked);
@@ -113,6 +113,10 @@ export default function SearchBar(props) {
     const toggleSyncSubtitles = () => {
         localStorage.setItem('settings-syncSubtitles', !syncSubtitles);
         setSyncSubtitles(!syncSubtitles);
+    };
+    const toggleShowMatchPreviews = () => {
+        localStorage.setItem('settings-showMatchPreviews', !showMatchPreviews);
+        setShowMatchPreviews(!showMatchPreviews);
     };
 
     const onSubmit = async (text) => {
@@ -185,6 +189,14 @@ export default function SearchBar(props) {
                     checked={showTags}
                     label={'Show tags in search results'}
                     onChange={toggleShowTags}
+                />
+            </Box>
+            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                <FormControlLabel
+                    control={<Switch/>}
+                    checked={showMatchPreviews}
+                    label={'Show match previews in list header'}
+                    onChange={toggleShowMatchPreviews}
                 />
             </Box>
             </Box>
