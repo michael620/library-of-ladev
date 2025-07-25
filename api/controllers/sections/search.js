@@ -179,7 +179,7 @@ module.exports = {
                 JOIN TotalCount tc ON lv.id = tc.video_id
                 LEFT JOIN VideoTags vt ON lv.id = vt.video_id
                 WHERE s.row_num <= $2
-                ORDER BY s.date DESC, s.video_id, s."startTime";
+                ORDER BY s.date DESC, s.video_id DESC, s."startTime";
                 `;
                 const rawResult = await sails.sendNativeQuery(RAW_SQL, [
                     `%${sanitizedText}%`, // $1
