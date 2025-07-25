@@ -74,7 +74,7 @@ const createVideoAndSubtitle = async (fd, metadata) => {
     });
 };
 
-const buildVideoMetadata = async (fd, subtitles, speakers) => {
+const buildVideoMetadata = async (fd) => {
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
     return new Promise(function(resolve,reject){
@@ -89,6 +89,33 @@ const buildVideoMetadata = async (fd, subtitles, speakers) => {
                 resolve(metadata);
             });
     });
+};
+
+const buildVideoMetadataFromText = (data) => {
+    const metadata = {};
+    const lines = data.split(/\r\n|\r|\n/);
+    for (const line of lines) {
+        const [url, date, title, tags] = line.split('\t');
+        metadata[url] = { url, date, title, tags };
+    }
+    return metadata;
+};
+
+const buildVideoMetadataFromFiles = (tsvFiles) => {
+    const dayjs = require('dayjs');
+    const metadata = {};
+    const date = dayjs().format('YYYY-MM-DD');
+    for (const tsvFile of tsvFiles) {
+        const splitStr = '.tsv_sanitized.tsv';
+        const url = tsvFile.filename.split(splitStr)[0];
+        metadata[url] = {
+            url,
+            date,
+            title: 'Stream',
+            tags: ''
+        };
+    }
+    return metadata;
 };
 
 const formatSeconds = (seconds) => {
@@ -177,5 +204,7 @@ module.exports = {
     processRawResultFTS,
     processRawResultSubtitle,
     createVideoAndSubtitle,
-    buildVideoMetadata
+    buildVideoMetadata,
+    buildVideoMetadataFromText,
+    buildVideoMetadataFromFiles
 };

@@ -7,6 +7,10 @@ module.exports = {
     files: ['transcript_files'],
 
     inputs: {
+        video_metadata_text: {
+            type: 'string',
+            required: false
+        },
         transcript_files: {
             description: 'files',
             type: 'ref',
@@ -20,57 +24,58 @@ module.exports = {
       }
     },
   
-    fn: async function ({transcript_files}) {
+    fn: async function ({transcript_files, video_metadata_text}) {
         const { createInterface } = require('readline');
         const { createReadStream, readFileSync } = require('fs');
-        const { createVideoAndSubtitle, buildVideoMetadata } = require('../../utils/utils');
+        const { createVideoAndSubtitle, buildVideoMetadata, buildVideoMetadataFromText, buildVideoMetadataFromFiles } = require('../../utils/utils');
         const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);
         const video_metadata_file = uploadedFiles.find((e) => e.filename === 'video_metadata.tsv');
-        if (video_metadata_file) {
-            const video_metadata = await buildVideoMetadata(video_metadata_file.fd);
-            await sails.rm(video_metadata_file.fd);
-            const tsvFiles = [];
-            const txtFiles = [];
-            for (const uploadedFile of uploadedFiles) {
-                if (uploadedFile.filename === 'video_metadata.tsv') continue;
-                const splitStr = uploadedFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
-                const url = uploadedFile.filename.split(splitStr)[0];
-                if (video_metadata[url] && uploadedFile.type === 'text/plain') {
-                    txtFiles.push(uploadedFile);
-                } else if (video_metadata[url] && uploadedFile.filename.endsWith('.tsv')) {
-                    tsvFiles.push(uploadedFile);
-                } else {
-                    sails.log(`Encountered error with file ${url}`);
-                    sails.log(uploadedFile);
-                }
-            }
-            for (const tsvFile of tsvFiles) {
-                const splitStr = tsvFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
-                const url = tsvFile.filename.split(splitStr)[0];
-                await createVideoAndSubtitle(tsvFile.fd, video_metadata[url]);
-                await sails.rm(tsvFile.fd);
-            }
-            for (const txtFile of txtFiles) {
-                const splitStr = txtFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
-                const url = txtFile.filename.split(splitStr)[0];
-                const video = await Video.findOne({ url });
-                if (!video) {
-                    sails.log('Error trying to find video '+url);
-                    continue;
-                }
-                const rawText = readFileSync(txtFile.fd, 'utf8');
-                await Transcript.destroyOne({ owner: video.id });
-                await Transcript.create({ owner: video.id, text: rawText });
-                await sails.rm(txtFile.fd);
-            }
-            sails.log(`Uploaded ${tsvFiles.length} files.`);
-        } else {
-            sails.log(`video_metadata_file not found`);
-            for (const uploadedFile of uploadedFiles) {
+        const tsvFiles = [];
+        const txtFiles = [];
+        for (const uploadedFile of uploadedFiles) {
+            if (uploadedFile.filename === 'video_metadata.tsv') continue;
+            const splitStr = uploadedFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
+            const url = uploadedFile.filename.split(splitStr)[0];
+            if (uploadedFile.type === 'text/plain') {
+                txtFiles.push(uploadedFile);
+            } else if (uploadedFile.filename.endsWith('.tsv')) {
+                tsvFiles.push(uploadedFile);
+            } else {
+                sails.log(`Encountered error with file ${url}`);
+                sails.log(uploadedFile);
                 await sails.rm(uploadedFile.fd);
             }
         }
+        let video_metadata;
+        if (video_metadata_file) {
+            video_metadata = await buildVideoMetadata(video_metadata_file.fd);
+            await sails.rm(video_metadata_file.fd);
+        } else if (video_metadata_text) {
+            video_metadata = buildVideoMetadataFromText(video_metadata_text);
+        } else {
+            video_metadata = buildVideoMetadataFromFiles(tsvFiles);
+        }
+        for (const tsvFile of tsvFiles) {
+            const splitStr = tsvFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
+            const url = tsvFile.filename.split(splitStr)[0];
+            await createVideoAndSubtitle(tsvFile.fd, video_metadata[url]);
+            await sails.rm(tsvFile.fd);
+        }
+        for (const txtFile of txtFiles) {
+            const splitStr = txtFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
+            const url = txtFile.filename.split(splitStr)[0];
+            const video = await Video.findOne({ url });
+            if (!video) {
+                sails.log('Error trying to find video '+url);
+                continue;
+            }
+            const rawText = readFileSync(txtFile.fd, 'utf8');
+            await Transcript.destroyOne({ owner: video.id });
+            await Transcript.create({ owner: video.id, text: rawText });
+            await sails.rm(txtFile.fd);
+        }
+        sails.log(`Uploaded ${tsvFiles.length} files.`);
         return { page: 'dashboard/index' };
     }
   }

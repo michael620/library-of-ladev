@@ -72,7 +72,7 @@ module.exports = {
             AND ($10::text[] IS NULL OR v.id IN (SELECT video_id FROM FilteredVideos))  -- Ensure required tags
             AND ($4::text IS NULL OR v.date >= $4)  -- Start date filter (if provided)
             AND ($5::text IS NULL OR v.date <= $5)  -- End date filter (if provided)
-            AND (v.title ILIKE $3 OR COALESCE(NULLIF($3, ''), '') = '')  -- Title filter (if provided)
+            AND ($3::text IS NULL OR v.title ILIKE $3)  -- Title filter (if provided)
             AND (($6::text IS NULL OR $7::INTEGER IS NULL) OR (v.date, v.id) < ($6, $7::INTEGER)) -- Pagination
         )
         `;
@@ -135,7 +135,18 @@ module.exports = {
                 ORDER BY rank DESC
                 LIMIT $2
                 OFFSET $8;`;
-                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`${sanitizedText}`, `${FETCH_SIZE}`, (title ? `%${sanitizedTitle}%` : null), startDate, endDate, null, null, fetchMetadata || 0, excludeTags, includeTags]);
+                const rawResult = await sails.sendNativeQuery(RAW_SQL, [
+                    `${sanitizedText}`, // $1
+                    `${FETCH_SIZE}`, // $2
+                    (title ? `%${sanitizedTitle}%` : null), // $3
+                    startDate, // $4
+                    endDate, // $5
+                    null, // $6
+                    null, // $7
+                    fetchMetadata || 0, // $8
+                    excludeTags, // $9
+                    includeTags // $10
+                ]);
                 props.searchResult = processRawResultFTS(rawResult);
             } else {
                 const lastVideo = fetchMetadata ? await Video.findOne({ url: fetchMetadata }) : undefined;
@@ -170,7 +181,18 @@ module.exports = {
                 WHERE s.row_num <= $2
                 ORDER BY s.date DESC, s.video_id, s."startTime";
                 `;
-                const rawResult = await sails.sendNativeQuery(RAW_SQL, [`%${sanitizedText}%`, FETCH_SIZE, (title ? `%${sanitizedTitle}%` : null), startDate, endDate, lastVideo?.date, lastVideo?.id, FETCH_SIZE, excludeTags, includeTags]);
+                const rawResult = await sails.sendNativeQuery(RAW_SQL, [
+                    `%${sanitizedText}%`, // $1
+                    FETCH_SIZE, // $2
+                    (title ? `%${sanitizedTitle}%` : null), // $3
+                    startDate, // $4
+                    endDate, // $5
+                    lastVideo?.date, // $6
+                    lastVideo?.id, // $7
+                    FETCH_SIZE, // $8
+                    excludeTags, // $9
+                    includeTags // $10
+                ]);
                 props.searchResult = processRawResult(rawResult);
             }
             if (props.searchResult.length < FETCH_SIZE) {
@@ -191,7 +213,18 @@ module.exports = {
             ORDER BY v.date DESC, v.id
             LIMIT $2;
             `;
-            const rawResult = await sails.sendNativeQuery(RAW_SQL, [null, FETCH_SIZE, (title ? `%${sanitizedTitle}%` : null), startDate, endDate, lastVideo?.date, lastVideo?.id, null, excludeTags, includeTags]);
+            const rawResult = await sails.sendNativeQuery(RAW_SQL, [
+                null, // $1
+                FETCH_SIZE, // $2
+                (title ? `%${sanitizedTitle}%` : null), // $3
+                startDate, // $4
+                endDate, // $5
+                lastVideo?.date, // $6
+                lastVideo?.id, // $7
+                null, // $8
+                excludeTags, // $9
+                includeTags // $10
+            ]);
             props.searchResult = processRawResult(rawResult);
             if (props.searchResult.length < FETCH_SIZE) {
                 props.noMoreResultsToFetch = true;
