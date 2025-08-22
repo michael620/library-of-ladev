@@ -36,35 +36,45 @@ const onCloseTSV = async (fd, subtitles, speakers, resolve) => {
     resolve();
 };
 
-const createVideoAndSubtitle = async (fd, metadata) => {
-    const { url, title, date, tags } = metadata;
+const createOrUpdateVideos = async (video_metadata) => {
+    for (const key of Object.keys(video_metadata)) {
+        const metadata = video_metadata[key];
+        const { url, title, date, tags } = metadata;
+        const { createInterface } = require('readline');
+        const { createReadStream } = require('fs');
+        const { TAG_TYPES } = require('../../shared/constants');
+        const video = await Video.findOrCreate({ url }, { url, title, date });
+        await Video.updateOne({ url }, { url, title, date });
+        const tagsArr = tags.split(', ');
+        const sqls = [];
+        for (const tag of tagsArr) {
+            const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
+            sqls.push(`
+                INSERT INTO tag (name, tag_type)
+                VALUES ('${tag}', '${tagType}')
+                ON CONFLICT (name) DO NOTHING;
+            `);
+        }
+        const formattedTags = tagsArr.map(item => `'${item}'`).join(', ');
+        sqls.push(`
+            INSERT INTO tagmap (video_id, tag_id)
+            SELECT v.id, t.id
+            FROM tag t
+            JOIN video v ON v.url = '${url}'
+            WHERE t.name IN (${formattedTags})
+            ON CONFLICT DO NOTHING;
+        `);
+        for (const sql of sqls) {
+            await sails.sendNativeQuery(sql);
+        }
+    };
+    await sails.hooks['db-refresh'].fetchAndUpdate();
+};
+
+const createSubtitle = async (fd, url) => {
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
-    const { TAG_TYPES } = require('../../shared/constants');
-    const video = await Video.findOrCreate({ url }, { url, title, date });
-    const tagsArr = tags.split(', ');
-    const sqls = [];
-    for (const tag of tagsArr) {
-        const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
-        sqls.push(`
-            INSERT INTO tag (name, tag_type)
-            VALUES ('${tag}', '${tagType}')
-            ON CONFLICT (name) DO NOTHING;
-        `);
-    }
-    const formattedTags = tagsArr.map(item => `'${item}'`).join(', ');
-    sqls.push(`
-        INSERT INTO tagmap (video_id, tag_id)
-        SELECT v.id, t.id
-        FROM tag t
-        JOIN video v ON v.url = '${url}'
-        WHERE t.name IN (${formattedTags})
-        ON CONFLICT DO NOTHING;
-    `);
-    for (const sql of sqls) {
-        await sails.sendNativeQuery(sql);
-    }
-    await sails.hooks['db-refresh'].fetchAndUpdate();
+    const video = await Video.find({ url });
     return new Promise(function(resolve,reject){
         const subtitles = [];
         const speakers = new Set();
@@ -77,13 +87,20 @@ const createVideoAndSubtitle = async (fd, metadata) => {
 const buildVideoMetadata = async (fd) => {
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
+    const dayjs = require('dayjs');
+    const defaultDate = dayjs().format('YYYY-MM-DD');
     return new Promise(function(resolve,reject){
         const metadata = {};
         createInterface({input: createReadStream(fd)})
             .on('line', (data) => {
-                const [url, date, title, tags] = data.split('\t');
+                const [url, title, date, tags] = data.split('\t');
                 if (url === 'url') return;
-                metadata[url] = { url, date, title, tags };
+                metadata[url] = {
+                    url,
+                    date: date ?? defaultDate,
+                    title: title ?? 'Stream',
+                    tags: tags ?? ''
+                };
             })
             .on('close', () => {
                 resolve(metadata);
@@ -203,7 +220,8 @@ module.exports = {
     processRawResult,
     processRawResultFTS,
     processRawResultSubtitle,
-    createVideoAndSubtitle,
+    createOrUpdateVideos,
+    createSubtitle,
     buildVideoMetadata,
     buildVideoMetadataFromText,
     buildVideoMetadataFromFiles

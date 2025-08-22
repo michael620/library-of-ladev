@@ -40,13 +40,14 @@ module.exports.custom = {
   rememberMeCookieMaxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 
   // Email address for receiving support messages & other correspondences.
-  internalEmail: 'support+development@example.com'
+  internalEmail: 'support+development@example.com',
 
   /***************************************************************************
    *                                                                          *
    * Any other custom config this Sails app should use during development.    *
    *                                                                          *
    ***************************************************************************/
+  uploadApiKey: process.env.UPLOAD_API_KEY
   // sendgridSecret: 'SG.fake.3e0Bn0qSQVnwb1E4qNPz9JZP5vLZYqjh7sn8S93oSHU',
   // stripeSecret: 'sk_test_Zzd814nldl91104qor5911gjald',
   // …

@@ -27,7 +27,7 @@ module.exports = {
     fn: async function ({transcript_files, video_metadata_text}) {
         const { createInterface } = require('readline');
         const { createReadStream, readFileSync } = require('fs');
-        const { createVideoAndSubtitle, buildVideoMetadata, buildVideoMetadataFromText, buildVideoMetadataFromFiles } = require('../../utils/utils');
+        const { createOrUpdateVideos, createSubtitle, buildVideoMetadata, buildVideoMetadataFromText, buildVideoMetadataFromFiles } = require('../../utils/utils');
         const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);
         const video_metadata_file = uploadedFiles.find((e) => e.filename === 'video_metadata.tsv');
@@ -35,9 +35,9 @@ module.exports = {
         const txtFiles = [];
         for (const uploadedFile of uploadedFiles) {
             if (uploadedFile.filename === 'video_metadata.tsv') continue;
-            const splitStr = uploadedFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
+            const splitStr = uploadedFile.filename.endsWith('.txt') ? '.txt' : '.tsv_sanitized.tsv';
             const url = uploadedFile.filename.split(splitStr)[0];
-            if (uploadedFile.type === 'text/plain') {
+            if (uploadedFile.filename.endsWith('.txt')) {
                 txtFiles.push(uploadedFile);
             } else if (uploadedFile.filename.endsWith('.tsv')) {
                 tsvFiles.push(uploadedFile);
@@ -56,14 +56,15 @@ module.exports = {
         } else {
             video_metadata = buildVideoMetadataFromFiles(tsvFiles);
         }
+        createOrUpdateVideos(video_metadata);
         for (const tsvFile of tsvFiles) {
             const splitStr = tsvFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
             const url = tsvFile.filename.split(splitStr)[0];
-            await createVideoAndSubtitle(tsvFile.fd, video_metadata[url]);
+            await createSubtitle(tsvFile.fd, url);
             await sails.rm(tsvFile.fd);
         }
         for (const txtFile of txtFiles) {
-            const splitStr = txtFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
+            const splitStr = txtFile.filename.endsWith('.txt') ? '.txt' : '.tsv_sanitized.tsv';
             const url = txtFile.filename.split(splitStr)[0];
             const video = await Video.findOne({ url });
             if (!video) {

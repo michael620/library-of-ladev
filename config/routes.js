@@ -19,7 +19,6 @@ module.exports.routes = {
    *                                                                          *
    ***************************************************************************/
   'GET /': 'home/view-home',
-  'GET /upload': 'user/upload',
   'POST /upload': 'user/upload',
   'GET /search': 'sections/search',
   'POST /search': 'sections/search',
