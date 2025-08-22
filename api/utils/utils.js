@@ -45,7 +45,7 @@ const createOrUpdateVideos = async (video_metadata) => {
         const { TAG_TYPES } = require('../../shared/constants');
         const video = await Video.findOrCreate({ url }, { url, title, date });
         await Video.updateOne({ url }, { url, title, date });
-        const tagsArr = tags.split(', ');
+        const tagsArr = tags ? tags.split(', ') : [];
         const sqls = [];
         for (const tag of tagsArr) {
             const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
@@ -93,13 +93,13 @@ const buildVideoMetadata = async (fd) => {
         const metadata = {};
         createInterface({input: createReadStream(fd)})
             .on('line', (data) => {
-                const [url, title, date, tags] = data.split('\t');
-                if (url === 'url') return;
+                const [url, title = 'Untitled Stream', date = defaultDate, tags = ''] = data.split('\t');
+                if (!url || url === 'url') return;
                 metadata[url] = {
                     url,
-                    date: date ?? defaultDate,
-                    title: title ?? 'Stream',
-                    tags: tags ?? ''
+                    date,
+                    title,
+                    tags
                 };
             })
             .on('close', () => {
@@ -111,8 +111,10 @@ const buildVideoMetadata = async (fd) => {
 const buildVideoMetadataFromText = (data) => {
     const metadata = {};
     const lines = data.split(/\r\n|\r|\n/);
+    const dayjs = require('dayjs');
+    const defaultDate = dayjs().format('YYYY-MM-DD');
     for (const line of lines) {
-        const [url, date, title, tags] = line.split('\t');
+        const [url, title = 'Untitled Stream', date = defaultDate, tags = ''] = line.split('\t');
         metadata[url] = { url, date, title, tags };
     }
     return metadata;
@@ -128,7 +130,7 @@ const buildVideoMetadataFromFiles = (tsvFiles) => {
         metadata[url] = {
             url,
             date,
-            title: 'Stream',
+            title: 'Untitled Stream',
             tags: ''
         };
     }
