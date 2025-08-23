@@ -43,7 +43,7 @@
   },
   "scripts": {
     "dev": "node --watch app.js",
-    "start": "NODE_ENV=production node app.js",
+    "start": "node app.js",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
     "test:unit": "node --test ./tests/unit/**/*.test.js",
