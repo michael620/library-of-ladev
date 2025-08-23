@@ -27,7 +27,7 @@ module.exports = {
     fn: async function ({transcript_files, video_metadata_text}) {
         const { createInterface } = require('readline');
         const { createReadStream, readFileSync } = require('fs');
-        const { createOrUpdateVideos, createSubtitle, buildVideoMetadata, buildVideoMetadataFromText, buildVideoMetadataFromFiles } = require('../../utils/utils');
+        const { createOrUpdateVideos, createSubtitle, createTranscript, buildVideoMetadata, buildVideoMetadataFromText } = require('../../utils/utils');
         const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);
         const video_metadata_file = uploadedFiles.find((e) => e.filename === 'video_metadata.tsv');
@@ -53,8 +53,6 @@ module.exports = {
             await sails.rm(video_metadata_file.fd);
         } else if (video_metadata_text) {
             video_metadata = buildVideoMetadataFromText(video_metadata_text);
-        } else {
-            video_metadata = buildVideoMetadataFromFiles(tsvFiles);
         }
         createOrUpdateVideos(video_metadata);
         for (const tsvFile of tsvFiles) {
@@ -66,17 +64,11 @@ module.exports = {
         for (const txtFile of txtFiles) {
             const splitStr = txtFile.filename.endsWith('.txt') ? '.txt' : '.tsv_sanitized.tsv';
             const url = txtFile.filename.split(splitStr)[0];
-            const video = await Video.findOne({ url });
-            if (!video) {
-                sails.log('Error trying to find video '+url);
-                continue;
-            }
-            const rawText = readFileSync(txtFile.fd, 'utf8');
-            await Transcript.destroyOne({ owner: video.id });
-            await Transcript.create({ owner: video.id, text: rawText });
+            await createTranscript(txtFile.fd, url);
             await sails.rm(txtFile.fd);
         }
-        sails.log(`Uploaded ${tsvFiles.length} files.`);
+        sails.log(`Uploaded ${tsvFiles.length} subtitle files.`);
+        sails.log(`Uploaded ${txtFiles.length} transcript files.`);
         return { page: 'dashboard/index' };
     }
   }

@@ -37,6 +37,7 @@ const onCloseTSV = async (fd, subtitles, speakers, resolve) => {
 };
 
 const createOrUpdateVideos = async (video_metadata) => {
+    if (!video_metadata) return;
     for (const key of Object.keys(video_metadata)) {
         const metadata = video_metadata[key];
         const { url, title, date, tags } = metadata;
@@ -45,27 +46,29 @@ const createOrUpdateVideos = async (video_metadata) => {
         const { TAG_TYPES } = require('../../shared/constants');
         const video = await Video.findOrCreate({ url }, { url, title, date });
         await Video.updateOne({ url }, { url, title, date });
-        const tagsArr = tags ? tags.split(', ') : [];
-        const sqls = [];
-        for (const tag of tagsArr) {
-            const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
+        if (tags) {
+            const tagsArr = tags.split(', ');
+            const sqls = [];
+            for (const tag of tagsArr) {
+                const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
+                sqls.push(`
+                    INSERT INTO tag (name, tag_type)
+                    VALUES ('${tag}', '${tagType}')
+                    ON CONFLICT (name) DO NOTHING;
+                `);
+            }
+            const formattedTags = tagsArr.map(item => `'${item}'`).join(', ');
             sqls.push(`
-                INSERT INTO tag (name, tag_type)
-                VALUES ('${tag}', '${tagType}')
-                ON CONFLICT (name) DO NOTHING;
+                INSERT INTO tagmap (video_id, tag_id)
+                SELECT v.id, t.id
+                FROM tag t
+                JOIN video v ON v.url = '${url}'
+                WHERE t.name IN (${formattedTags})
+                ON CONFLICT DO NOTHING;
             `);
-        }
-        const formattedTags = tagsArr.map(item => `'${item}'`).join(', ');
-        sqls.push(`
-            INSERT INTO tagmap (video_id, tag_id)
-            SELECT v.id, t.id
-            FROM tag t
-            JOIN video v ON v.url = '${url}'
-            WHERE t.name IN (${formattedTags})
-            ON CONFLICT DO NOTHING;
-        `);
-        for (const sql of sqls) {
-            await sails.sendNativeQuery(sql);
+            for (const sql of sqls) {
+                await sails.sendNativeQuery(sql);
+            }
         }
     };
     await sails.hooks['db-refresh'].fetchAndUpdate();
@@ -74,7 +77,11 @@ const createOrUpdateVideos = async (video_metadata) => {
 const createSubtitle = async (fd, url) => {
     const { createInterface } = require('readline');
     const { createReadStream } = require('fs');
-    const video = await Video.find({ url });
+    const video = await Video.findOne({ url });
+    if (!video) {
+        sails.log('Error trying to find video '+url);
+        return Promise.resolve();
+    }
     return new Promise(function(resolve,reject){
         const subtitles = [];
         const speakers = new Set();
@@ -82,6 +89,17 @@ const createSubtitle = async (fd, url) => {
         .on('line', (data) => processTSVLine(data, video.id, subtitles, speakers))
         .on('close', () => onCloseTSV(fd, subtitles, speakers, resolve));
     });
+};
+
+const createTranscript = async (fd, url) => {
+    const video = await Video.findOne({ url });
+    if (!video) {
+        sails.log('Error trying to find video '+url);
+        return Promise.resolve();
+    }
+    const rawText = readFileSync(txtFile.fd, 'utf8');
+    await Transcript.destroyOne({ owner: video.id });
+    await Transcript.create({ owner: video.id, text: rawText });
 };
 
 const buildVideoMetadata = async (fd) => {
@@ -116,23 +134,6 @@ const buildVideoMetadataFromText = (data) => {
     for (const line of lines) {
         const [url, title = 'Untitled Stream', date = defaultDate, tags = ''] = line.split('\t');
         metadata[url] = { url, date, title, tags };
-    }
-    return metadata;
-};
-
-const buildVideoMetadataFromFiles = (tsvFiles) => {
-    const dayjs = require('dayjs');
-    const metadata = {};
-    const date = dayjs().format('YYYY-MM-DD');
-    for (const tsvFile of tsvFiles) {
-        const splitStr = '.tsv_sanitized.tsv';
-        const url = tsvFile.filename.split(splitStr)[0];
-        metadata[url] = {
-            url,
-            date,
-            title: 'Untitled Stream',
-            tags: ''
-        };
     }
     return metadata;
 };
@@ -224,7 +225,7 @@ module.exports = {
     processRawResultSubtitle,
     createOrUpdateVideos,
     createSubtitle,
+    createTranscript,
     buildVideoMetadata,
-    buildVideoMetadataFromText,
-    buildVideoMetadataFromFiles
+    buildVideoMetadataFromText
 };
