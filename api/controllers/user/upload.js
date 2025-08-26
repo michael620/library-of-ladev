@@ -25,8 +25,6 @@ module.exports = {
     },
   
     fn: async function ({transcript_files, video_metadata_text}) {
-        const { createInterface } = require('readline');
-        const { createReadStream, readFileSync } = require('fs');
         const { createOrUpdateVideos, createSubtitle, createTranscript, buildVideoMetadata, buildVideoMetadataFromText } = require('../../utils/utils');
         const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);

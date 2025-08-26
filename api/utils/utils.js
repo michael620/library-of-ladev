@@ -92,6 +92,7 @@ const createSubtitle = async (fd, url) => {
 };
 
 const createTranscript = async (fd, url) => {
+    const { readFileSync } = require('fs');
     const video = await Video.findOne({ url });
     if (!video) {
         sails.log('Error trying to find video '+url);
