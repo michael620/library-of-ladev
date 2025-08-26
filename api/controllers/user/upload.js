@@ -54,7 +54,7 @@ module.exports = {
         } else if (video_metadata_text) {
             video_metadata = buildVideoMetadataFromText(video_metadata_text);
         }
-        createOrUpdateVideos(video_metadata);
+        await createOrUpdateVideos(video_metadata);
         for (const tsvFile of tsvFiles) {
             const splitStr = tsvFile.type === 'text/plain' ? '.txt' : '.tsv_sanitized.tsv';
             const url = tsvFile.filename.split(splitStr)[0];
