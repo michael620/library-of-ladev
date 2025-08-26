@@ -41,10 +41,8 @@ const createOrUpdateVideos = async (video_metadata) => {
     for (const key of Object.keys(video_metadata)) {
         const metadata = video_metadata[key];
         const { url, title, date, tags } = metadata;
-        const { createInterface } = require('readline');
-        const { createReadStream } = require('fs');
         const { TAG_TYPES } = require('../../shared/constants');
-        const video = await Video.findOrCreate({ url }, { url, title, date });
+        await Video.findOrCreate({ url }, { url, title, date });
         await Video.updateOne({ url }, { url, title, date });
         if (tags) {
             const tagsArr = tags.split(', ');
@@ -82,7 +80,7 @@ const createSubtitle = async (fd, url) => {
         sails.log('Error trying to find video '+url);
         return Promise.resolve();
     }
-    return new Promise(function(resolve,reject){
+    return new Promise(function(resolve){
         const subtitles = [];
         const speakers = new Set();
         createInterface({input: createReadStream(fd)})
@@ -98,7 +96,7 @@ const createTranscript = async (fd, url) => {
         sails.log('Error trying to find video '+url);
         return Promise.resolve();
     }
-    const rawText = readFileSync(txtFile.fd, 'utf8');
+    const rawText = readFileSync(fd, 'utf8');
     await Transcript.destroyOne({ owner: video.id });
     await Transcript.create({ owner: video.id, text: rawText });
 };
@@ -108,7 +106,7 @@ const buildVideoMetadata = async (fd) => {
     const { createReadStream } = require('fs');
     const dayjs = require('dayjs');
     const defaultDate = dayjs().format('YYYY-MM-DD');
-    return new Promise(function(resolve,reject){
+    return new Promise(function(resolve){
         const metadata = {};
         createInterface({input: createReadStream(fd)})
             .on('line', (data) => {

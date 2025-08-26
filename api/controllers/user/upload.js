@@ -26,7 +26,6 @@ module.exports = {
   
     fn: async function ({transcript_files, video_metadata_text}) {
         const { createOrUpdateVideos, createSubtitle, createTranscript, buildVideoMetadata, buildVideoMetadataFromText } = require('../../utils/utils');
-        const path = require('path');
         const uploadedFiles = await sails.upload(transcript_files);
         const video_metadata_file = uploadedFiles.find((e) => e.filename === 'video_metadata.tsv');
         const tsvFiles = [];
