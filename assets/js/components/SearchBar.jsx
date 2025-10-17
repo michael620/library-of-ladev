@@ -68,13 +68,14 @@ const CustomAutocomplete = (props) => {
 };
 
 export default function SearchBar(props) {
+    const urlParams = new URLSearchParams(window.location.search);
     const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, syncSubtitles, setSyncSubtitles, showMatchPreviews, setShowMatchPreviews } = props;
-    const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
-    const [title, setTitle] = useState(props.searchParams?.title || '');
-    const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
-    const [endDate, setEndDate] = useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
-    const [includeTags, setIncludeTags] = useState(props.searchParams?.includeTags || []);
-    const [excludeTags, setExcludeTags] = useState(props.searchParams?.excludeTags || []);
+    const [isFullTextSearch, setIsFullTextSearch] = useState(urlParams.get('isFullTextSearch') || false);
+    const [title, setTitle] = useState(urlParams.get('title') || '');
+    const [startDate, setStartDate] = useState(urlParams.get('startDate') ? dayjs(urlParams.get('startDate')) : null);
+    const [endDate, setEndDate] = useState(urlParams.get('endDate') ? dayjs(urlParams.get('endDate')) : null);
+    const [includeTags, setIncludeTags] = useState(urlParams.getAll('includeTags[]') || []);
+    const [excludeTags, setExcludeTags] = useState(urlParams.getAll('excludeTags[]') || []);
     const [disabled, setDisabled] = useState(false);
     const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
     const [advancedSearchAnchorEl, setAdvancedSearchAnchorEl] = useState(null);
@@ -270,7 +271,7 @@ export default function SearchBar(props) {
             maxWidth="md"
             fullWidth
         >
-            <DialogTitle><Typography variant='h5'>Help</Typography></DialogTitle>
+            <DialogTitle variant='h5'>Help</DialogTitle>
             <DialogContent>
                 <Typography variant="h6">Default search</Typography>
                 <Typography variant="body1">
@@ -308,7 +309,7 @@ export default function SearchBar(props) {
         showFullSearchBar={showFullSearchBar}
         onSubmit={onSubmit}
         disabled={disabled}
-        text={props.searchParams?.text}
+        text={urlParams.get('text')}
         isLoading={isLoading}
     />
     {settingsAndFiltersComponents}

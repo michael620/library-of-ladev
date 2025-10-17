@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import { useTheme } from '@mui/material/styles';
+import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -8,6 +9,11 @@ import ListItemText from '@mui/material/ListItemText';
 import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DownloadIcon from '@mui/icons-material/Download';
+import BrowserUpdatedIcon from '@mui/icons-material/BrowserUpdated';
+import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -19,40 +25,54 @@ import Snackbar from '@mui/material/Snackbar';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
 import YouTube from 'react-youtube';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import LinkIcon from '@mui/icons-material/Link';
+import ArticleIcon from '@mui/icons-material/Article';
+import Popper from '@mui/material/Popper';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
 
 const SubtitleListItem = memo((props) => {
-    const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy, snackbarOpen, setSnackbarOpen } = props;
+    const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy } = props;
     const theme = useTheme();
     return (
         <>
-            <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style}
+            <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style} disablePadding
             sx={(theme) => (isActive ? {
                 backgroundColor:'rgba(0, 0, 0, 0.25)',
                 borderLeft: `0.25rem solid ${theme.palette.primary.main}`,
                 transition: 'background-color 1s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 paddingTop: 0,
                 paddingBottom: 0
             } : {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 paddingTop: 0,
                 paddingBottom: 0
             })}
-            secondaryAction={
-                <IconButton edge="end" aria-label="copy" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, url, startTime)}>
-                    <ContentCopyIcon />
-                </IconButton>
-            }>
-                <ListItemButton onClick={() => handleClickSubtitle(startTime)}>
+            >
+                <ListItemButton onClick={() => handleClickSubtitle(startTime)} sx={{ flex: 1 }}>
                     <ListItemText primary={`${text}`} secondary={`Timestamp: ${timestamp}`} />
                 </ListItemButton>
+                <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
+                    <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
+                        <ArticleIcon />
+                    </IconButton>
+                    <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
+                        <LinkIcon />
+                    </IconButton>
+                </Box>
             </ListItem>
-            <Snackbar
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                open={snackbarOpen}
-                onClose={() => setSnackbarOpen(false)}
-                autoHideDuration={3000}
-                message="Copied!"
-            />
         </>
     )
 });
@@ -63,7 +83,15 @@ export default function SearchList(props) {
     const subtitleContainerRef = useRef(null);
     const [open, setOpen] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
     const [currentTime, setCurrentTime] = useState(null);
+    const [videoOptionsAnchorEl, setVideoOptionsAnchorEl] = useState(null);
+    const isVideoOptionsOpen = Boolean(videoOptionsAnchorEl);
+    const [videoOptionsStartTime, setVideoOptionsStartTime] = useState(timeStrToDayJs('00:00:00'));
+    const [videoOptionsEndTime, setVideoOptionsEndTime] = useState(timeStrToDayJs('00:00:00'));
+    const [videoOptionsIncludeTimestamp, setVideoOptionsIncludeTimestamp] = useState(false);
+    const [maxTime, setMaxTime] = useState(null);
+    const [isLoadingDownloadText, setIsLoadingDownloadText] = useState(false);
 
     const handleClickSubtitleListItem = useCallback((key) => {
         if (open === key) {
@@ -77,11 +105,46 @@ export default function SearchList(props) {
         player.current.seekTo(startTime);
     }, [player]);
 
-    const handleClickCopy = useCallback((event, url, startTime) => {
-        event.stopPropagation();
-        navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${url}&t=${startTime}s`);
+    const showSnackbar = (message) => {
+        setSnackbarMessage(message);
         setSnackbarOpen(true);
-    }, [snackbarOpen]);
+    }
+
+    const handleClickCopy = (event, text) => {
+        event.stopPropagation();
+        navigator.clipboard.writeText(text);
+        showSnackbar('Copied!')
+    };
+
+    const toggleVideoOptions = (event) => {
+        setVideoOptionsAnchorEl(videoOptionsAnchorEl ? null : event.currentTarget);
+    };
+
+    const handleLoadAllSubtitles = async (url, i) => {
+        await props.fetchSubtitles(i, url, true);
+    }
+
+    const handleExportTranscript = async (videoUrl) => {
+        try {
+            setIsLoadingDownloadText(true);
+            const res = await fetch(`/api/export-transcript?url=${videoUrl}&start=${dayJsToSeconds(videoOptionsStartTime)}&end=${dayJsToSeconds(videoOptionsEndTime)}&includeTimestamp=${videoOptionsIncludeTimestamp}`, {
+                method: 'GET',
+            });
+            if (!res.ok) throw new Error('Failed to download file');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${videoUrl}-${videoOptionsStartTime.format('HH:mm:ss')}-${videoOptionsEndTime.format('HH:mm:ss')}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+            showSnackbar('Failed to download file.');
+        } finally {
+            setIsLoadingDownloadText(false);
+        }
+    };
 
     useEffect(() => {
         let interval;
@@ -107,12 +170,14 @@ export default function SearchList(props) {
         }
     }, [open, currentTime]);
 
-    const opts = {
-        playerVars: {
-            // https://developers.google.com/youtube/player_parameters
-            autoplay: 0,
-        },
-    };
+    useEffect(() => {
+        if (player.current) {
+            const newMaxTime = timeStrToDayJs(formatSeconds(player.current.getDuration()));
+            setVideoOptionsEndTime(newMaxTime);
+            setMaxTime(newMaxTime);
+        }
+    }, [player.current]);
+
     const _onReady = (event) => {
         player.current = event.target;
     }
@@ -127,6 +192,97 @@ export default function SearchList(props) {
         `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
         `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
     }
+
+    const getVideoOptionsComponent = (video, i) => (<>
+        <IconButton onClick={toggleVideoOptions}>
+            <MoreVertIcon />
+        </IconButton>
+        <Popper id={isVideoOptionsOpen ? 'video-options-popper' : undefined} open={isVideoOptionsOpen} anchorEl={videoOptionsAnchorEl} placement='top-start'>
+            <Card>
+            <CardContent>
+            <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
+                <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                    <Button
+                        loading={isLoadingSubtitle}
+                        disabled={!!video.matches || video.allSubtitlesFetched}
+                        startIcon={<BrowserUpdatedIcon />}
+                        onClick={() => handleLoadAllSubtitles(video.url, i)}
+                    >
+                    Load all subtitles
+                    </Button>
+                </Box>
+                <Box display='flex' flexDirection='column' justifyContent='start'>
+                <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                    <Button
+                        loading={isLoadingDownloadText}
+                        disabled={isLoadingDownloadText}
+                        startIcon={<DownloadIcon />}
+                        onClick={() => handleExportTranscript(video.url)}
+                    >
+                        Download as text
+                    </Button>
+                </Box>
+                <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+                    <Accordion>
+                        <AccordionSummary
+                        expandIcon={<ArrowDropDownIcon />}
+                        aria-controls="export-transcript-advanced-options"
+                        >
+                        <Typography component="span">Advanced options</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}} flexWrap={{ xs: 'wrap', sm: 'nowrap' }}>
+                                <TimePicker
+                                    label='Start Time'
+                                    views={['hours', 'minutes', 'seconds']}
+                                    format='HH:mm:ss'
+                                    skipDisabled={true}
+                                    maxTime={maxTime}
+                                    ampm={false}
+                                    viewRenderers={{
+                                        hours: renderMultiSectionDigitalClockTimeView,
+                                        minutes: renderMultiSectionDigitalClockTimeView,
+                                        seconds: renderMultiSectionDigitalClockTimeView,
+                                    }}
+                                    timeSteps={{ hours: 1, minutes: 1, seconds: 1 }}
+                                    value={videoOptionsStartTime}
+                                    onChange={(newValue) => setVideoOptionsStartTime(newValue)}
+                                />
+                                <HorizontalRuleIcon sx={{ display: { xs: 'none', 'sm': 'unset' }}}/>
+                                <TimePicker
+                                    label='End Time'
+                                    views={['hours', 'minutes', 'seconds']}
+                                    format='HH:mm:ss'
+                                    skipDisabled={true}
+                                    maxTime={maxTime}
+                                    ampm={false}
+                                    viewRenderers={{
+                                        hours: renderMultiSectionDigitalClockTimeView,
+                                        minutes: renderMultiSectionDigitalClockTimeView,
+                                        seconds: renderMultiSectionDigitalClockTimeView,
+                                    }}
+                                    timeSteps={{ hours: 1, minutes: 1, seconds: 1 }}
+                                    value={videoOptionsEndTime}
+                                    onChange={(newValue) => setVideoOptionsEndTime(newValue)}
+                                />
+                            </Box>
+                            <Box>
+                                <FormControlLabel
+                                    control={<Switch/>}
+                                    checked={videoOptionsIncludeTimestamp}
+                                    label={'Include timestamp'}
+                                    onChange={(event) => setVideoOptionsIncludeTimestamp(event.target.checked)}
+                                />
+                            </Box>
+                        </AccordionDetails>
+                    </Accordion>
+                </Box>
+                </Box>
+            </Box>
+            </CardContent>
+            </Card>
+        </Popper>
+    </>);
 
     return (
         props.searchResult ? <>
@@ -171,10 +327,23 @@ export default function SearchList(props) {
                         } />
                         {open===url ? <ExpandLess /> : <ExpandMore />}
                     </ListItemButton>
-                    <Collapse in={open===url} timeout="auto" unmountOnExit>
+                    <Collapse in={open===url} timeout="auto" unmountOnExit onExit={() => setVideoOptionsAnchorEl(null)}>
                         <Paper elevation={2}>
-                        <Box sx={{padding: '1rem'}}>
-                            <YouTube videoId={url} opts={opts} onReady={_onReady}/>
+                        <Box>
+                            <Box>
+                                <YouTube
+                                videoId={url}
+                                opts={{
+                                    playerVars: {
+                                        // https://developers.google.com/youtube/player_parameters
+                                        autoplay: 0,
+                                    }
+                                }}
+                                onReady={_onReady}/>
+                            </Box>
+                            <Box>
+                                {getVideoOptionsComponent(video, i)}
+                            </Box>
                         </Box>
                         <List component="div" disablePadding>
                         <Box ref={subtitleContainerRef} sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
@@ -189,8 +358,6 @@ export default function SearchList(props) {
                                         isActive={currentTime >= subtitle.startTime && currentTime < (video.subtitles[j+1] ? video.subtitles[j+1].startTime : Infinity)}
                                         url={url}
                                         handleClickCopy={handleClickCopy}
-                                        snackbarOpen={snackbarOpen}
-                                        setSnackbarOpen={setSnackbarOpen}
                                     />
                                 )) : video.matches ? video.matches.map((match, j) => (
                                     <ListItem key={j}>
@@ -199,10 +366,6 @@ export default function SearchList(props) {
                                 )) : ''
                             }
                             {((!video.matches && !video.subtitles) || video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => props.onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
-                            {(!video.matches && !video.subtitles && !video.noMoreSubtitlesToFetch) ?
-                            <>
-                                <Box padding='1rem'><Button loading={isLoadingSubtitle} onClick={async () => await props.fetchSubtitles(i, url)}>Load subtitles</Button></Box>
-                            </> : ''}
                         </Box>
                         </List>
                         </Paper>
@@ -216,6 +379,13 @@ export default function SearchList(props) {
             No more results to show.
         </ListSubheader> : <LinearProgress ref={props.onFetchMoreResults} sx={{ visibility: isLoading ? "visible" : "hidden" }}/>
         }
+        <Snackbar
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            open={snackbarOpen}
+            onClose={() => setSnackbarOpen(false)}
+            autoHideDuration={3000}
+            message={snackbarMessage}
+        />
         </> : ''
     );
 }

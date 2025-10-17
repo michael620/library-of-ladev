@@ -137,13 +137,6 @@ const buildVideoMetadataFromText = (data) => {
     return metadata;
 };
 
-const formatSeconds = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    return `${hours}h ${minutes}m ${remainingSeconds}s`;
-}
-
 const sortTags = (tags) => {
     if (!tags) return [];
     const TAGS = sails.hooks['db-refresh'].getTags();
@@ -161,6 +154,7 @@ const sortTags = (tags) => {
 }
 
 const processRawResult = (rawResult) => {
+    const { formatSeconds } = require('../../shared/constants');
     const map = new Map();
     for (const row of rawResult.rows) {
         const { url, title, date, tags } = row;
@@ -207,6 +201,7 @@ const processRawResultFTS = (rawResult) => {
 }
 
 const processRawResultSubtitle = (rawResult) => {
+    const { formatSeconds } = require('../../shared/constants');
     const results = rawResult.rows.map(row => ({
         startTime: row.startTime,
         timestamp: formatSeconds(row.startTime),
@@ -218,7 +213,6 @@ const processRawResultSubtitle = (rawResult) => {
 module.exports = {
     processTSVLine,
     onCloseTSV,
-    formatSeconds,
     processRawResult,
     processRawResultFTS,
     processRawResultSubtitle,
