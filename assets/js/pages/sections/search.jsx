@@ -9,7 +9,6 @@ import { FETCH_TYPE } from '../../../../shared/constants';
 
 Search.layout = (page) => <NewAppLayout children={page} />
 export default function Search(props) {
-    const urlParams = new URLSearchParams(window.location.search);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);
     const [searchResult, setSearchResult] = useState(props.searchResult);
@@ -24,17 +23,17 @@ export default function Search(props) {
     const fetchMoreResults = async () => {
         if (noMoreResultsToFetch || isLoading) return;
         setIsLoading(true);
-        let fetchType = urlParams.get('isFullTextSearch') ? FETCH_TYPE.PAGE_FTS : FETCH_TYPE.PAGE;
+        let fetchType = props.searchParams?.isFullTextSearch ? FETCH_TYPE.PAGE_FTS : FETCH_TYPE.PAGE;
         let fetchMetadata = fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : searchResult[searchResult.length - 1].url;
         router.visit('/search', {
             data: {
-                text: urlParams.get('text'),
-                isFullTextSearch: urlParams.get('isFullTextSearch'),
-                title: urlParams.get('title'),
-                startDate: urlParams.get('startDate'),
-                endDate: urlParams.get('endDate'),
-                includeTags: urlParams.getAll('includeTags[]'),
-                excludeTags: urlParams.getAll('excludeTags[]'),
+                text: props.searchParams?.text,
+                isFullTextSearch: props.searchParams?.isFullTextSearch,
+                title: props.searchParams?.title,
+                startDate: props.searchParams?.startDate,
+                endDate: props.searchParams?.endDate,
+                includeTags: props.searchParams?.includeTags,
+                excludeTags: props.searchParams?.excludeTags,
                 fetchType,
                 fetchMetadata,
             },
@@ -52,27 +51,21 @@ export default function Search(props) {
         });
     };
 
-    const fetchSubtitles = async (i, url, fetchAll) => {
+    const fetchSubtitles = async (i, url) => {
         if (isLoadingSubtitle) return;
         setIsLoadingSubtitle(true);
-        let data = {
-            fetchType: FETCH_TYPE.SUBTITLE,
-            fetchMetadata: url
-        };
-        if (!fetchAll) {
-            data = {
-                ...data,
-                text: urlParams.get('text'),
-                isFullTextSearch: urlParams.get('isFullTextSearch'),
-                title: urlParams.get('title'),
-                startDate: urlParams.get('startDate'),
-                endDate: urlParams.get('endDate'),
-                includeTags: urlParams.getAll('includeTags[]'),
-                excludeTags: urlParams.getAll('excludeTags[]'),
-            }
-        }
         router.visit('/search', {
-            data,
+            data: {
+                text: props.searchParams?.text,
+                isFullTextSearch: props.searchParams?.isFullTextSearch,
+                title: props.searchParams?.title,
+                startDate: props.searchParams?.startDate,
+                endDate: props.searchParams?.endDate,
+                includeTags: props.searchParams?.includeTags,
+                excludeTags: props.searchParams?.excludeTags,
+                fetchType: FETCH_TYPE.SUBTITLE,
+                fetchMetadata: url
+            },
             preserveState: true,
             preserveScroll: true,
             preserveUrl: true,
@@ -80,7 +73,6 @@ export default function Search(props) {
                 if (response.props.subtitleResult) {
                     setSubtitleResult({
                         subtitles: response.props.subtitleResult,
-                        allSubtitlesFetched: response.props.allSubtitlesFetched,
                         i
                     });
                 }
@@ -94,7 +86,6 @@ export default function Search(props) {
             const newResults = [...searchResult];
             newResults[subtitleResult.i].subtitles = subtitleResult.subtitles;
             newResults[subtitleResult.i].noMoreSubtitlesToFetch = true;
-            if (subtitleResult.allSubtitlesFetched) newResults[subtitleResult.i].allSubtitlesFetched = true;
             setSearchResult(newResults);
             setIsLoadingSubtitle(false);
         } else {
@@ -139,6 +130,7 @@ export default function Search(props) {
     <SearchBar
         isLoading={isLoading}
         setIsLoading={setIsLoading}
+        searchParams={props.searchParams}
         showFullSearchBar={true}
         showTags={showTags}
         setShowTags={setShowTags}
@@ -151,7 +143,7 @@ export default function Search(props) {
     <Paper elevation={1}>
         <SearchList
             searchResult={searchResult}
-            text={urlParams.get('text')}
+            text={props.searchParams?.text}
             onFetchMoreResults={onFetchMoreResults}
             noMoreResultsToFetch={noMoreResultsToFetch}
             showTags={showTags}
