@@ -114,6 +114,7 @@ module.exports = {
             `;
             const rawResult = await sails.sendNativeQuery(RAW_SQL, [text ? `%${sanitizedText}%` : null, fetchMetadata]);
             props.subtitleResult = processRawResultSubtitle(rawResult);
+            if (!text) props.allSubtitlesFetched = true;
         } else if (text) {
             if (isFullTextSearch) {
                 const RAW_SQL = `

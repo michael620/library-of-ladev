@@ -270,7 +270,7 @@ export default function SearchBar(props) {
             maxWidth="md"
             fullWidth
         >
-            <DialogTitle><Typography variant='h5'>Help</Typography></DialogTitle>
+            <DialogTitle variant='h5'>Help</DialogTitle>
             <DialogContent>
                 <Typography variant="h6">Default search</Typography>
                 <Typography variant="body1">

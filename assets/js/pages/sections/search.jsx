@@ -51,11 +51,16 @@ export default function Search(props) {
         });
     };
 
-    const fetchSubtitles = async (i, url) => {
+    const fetchSubtitles = async (i, url, fetchAll) => {
         if (isLoadingSubtitle) return;
         setIsLoadingSubtitle(true);
-        router.visit('/search', {
-            data: {
+        let data = {
+            fetchType: FETCH_TYPE.SUBTITLE,
+            fetchMetadata: url
+        };
+        if (!fetchAll) {
+            data = {
+                ...data,
                 text: props.searchParams?.text,
                 isFullTextSearch: props.searchParams?.isFullTextSearch,
                 title: props.searchParams?.title,
@@ -63,9 +68,10 @@ export default function Search(props) {
                 endDate: props.searchParams?.endDate,
                 includeTags: props.searchParams?.includeTags,
                 excludeTags: props.searchParams?.excludeTags,
-                fetchType: FETCH_TYPE.SUBTITLE,
-                fetchMetadata: url
-            },
+            }
+        }
+        router.visit('/search', {
+            data,
             preserveState: true,
             preserveScroll: true,
             preserveUrl: true,
@@ -73,6 +79,7 @@ export default function Search(props) {
                 if (response.props.subtitleResult) {
                     setSubtitleResult({
                         subtitles: response.props.subtitleResult,
+                        allSubtitlesFetched: response.props.allSubtitlesFetched,
                         i
                     });
                 }
@@ -86,6 +93,7 @@ export default function Search(props) {
             const newResults = [...searchResult];
             newResults[subtitleResult.i].subtitles = subtitleResult.subtitles;
             newResults[subtitleResult.i].noMoreSubtitlesToFetch = true;
+            if (subtitleResult.allSubtitlesFetched) newResults[subtitleResult.i].allSubtitlesFetched = true;
             setSearchResult(newResults);
             setIsLoadingSubtitle(false);
         } else {

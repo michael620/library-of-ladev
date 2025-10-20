@@ -22,6 +22,7 @@ module.exports.routes = {
   'POST /upload': 'user/upload',
   'GET /search': 'sections/search',
   'POST /search': 'sections/search',
+  'GET /api/export-transcript': 'sections/export-transcript',
 
   'GET /signup': 'auth/view-signup',
   'POST /signup': 'auth/signup',
