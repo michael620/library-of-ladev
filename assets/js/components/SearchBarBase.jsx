@@ -46,7 +46,7 @@ export default function SearchBarBase(props) {
                 }
             }}
         />
-        {showFullSearchBar ? <IconButton onClick={onSubmit} disabled={disabled || isLoading}>
+        {showFullSearchBar ? <IconButton aria-label="search" onClick={onSubmit} disabled={disabled || isLoading}>
             <SendIcon />
         </IconButton> : ''}
     </FormControl>

@@ -54,22 +54,18 @@ export default function Search(props) {
     const fetchSubtitles = async (i, url, fetchAll) => {
         if (isLoadingSubtitle) return;
         setIsLoadingSubtitle(true);
-        let data = {
+        const data = {
             fetchType: FETCH_TYPE.SUBTITLE,
-            fetchMetadata: url
+            fetchMetadata: url,
+            text: props.searchParams?.text,
+            isFullTextSearch: props.searchParams?.isFullTextSearch,
+            title: props.searchParams?.title,
+            startDate: props.searchParams?.startDate,
+            endDate: props.searchParams?.endDate,
+            includeTags: props.searchParams?.includeTags,
+            excludeTags: props.searchParams?.excludeTags,
+            fetchAll
         };
-        if (!fetchAll) {
-            data = {
-                ...data,
-                text: props.searchParams?.text,
-                isFullTextSearch: props.searchParams?.isFullTextSearch,
-                title: props.searchParams?.title,
-                startDate: props.searchParams?.startDate,
-                endDate: props.searchParams?.endDate,
-                includeTags: props.searchParams?.includeTags,
-                excludeTags: props.searchParams?.excludeTags,
-            }
-        }
         router.visit('/search', {
             data,
             preserveState: true,

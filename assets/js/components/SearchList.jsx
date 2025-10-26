@@ -42,38 +42,36 @@ const SubtitleListItem = memo((props) => {
     const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy } = props;
     const theme = useTheme();
     return (
-        <>
-            <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style} disablePadding
-            sx={(theme) => (isActive ? {
-                backgroundColor:'rgba(0, 0, 0, 0.25)',
-                borderLeft: `0.25rem solid ${theme.palette.primary.main}`,
-                transition: 'background-color 1s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: 0,
-                paddingBottom: 0
-            } : {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: 0,
-                paddingBottom: 0
-            })}
-            >
-                <ListItemButton onClick={() => handleClickSubtitle(startTime)} sx={{ flex: 1 }}>
-                    <ListItemText primary={`${text}`} secondary={`Timestamp: ${timestamp}`} />
-                </ListItemButton>
-                <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
-                    <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
-                        <ArticleIcon />
-                    </IconButton>
-                    <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
-                        <LinkIcon />
-                    </IconButton>
-                </Box>
-            </ListItem>
-        </>
+        <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style} disablePadding
+        sx={(theme) => (isActive ? {
+            backgroundColor:'rgba(0, 0, 0, 0.25)',
+            borderLeft: `0.25rem solid ${theme.palette.primary.main}`,
+            transition: 'background-color 1s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: 0,
+            paddingBottom: 0
+        } : {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: 0,
+            paddingBottom: 0
+        })}
+        >
+            <ListItemButton onClick={() => handleClickSubtitle(startTime)} sx={{ flex: 1 }}>
+                <ListItemText primary={`${text}`} secondary={`Timestamp: ${timestamp}`} />
+            </ListItemButton>
+            <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
+                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
+                    <ArticleIcon />
+                </IconButton>
+                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
+                    <LinkIcon />
+                </IconButton>
+            </Box>
+        </ListItem>
     )
 });
 
@@ -163,7 +161,7 @@ export default function SearchList(props) {
             const currentSubtitle = document.querySelector(`[data-subtitle-id="${open}_${currentTime}"]`);
             if (subtitleContainer && currentSubtitle) {
                 subtitleContainer.scrollTo({
-                    top: currentSubtitle.offsetTop - subtitleContainer.offsetTop,
+                    top: currentSubtitle.offsetTop,
                     behavior: 'smooth'
                 });
             }
@@ -303,7 +301,7 @@ export default function SearchList(props) {
                     numMatches = video.matches.length;
                 }
                 return (
-                    <Box key={url}>
+                    <ListItem key={url} disablePadding sx={{ display: 'block' }}>
                     <ListItemButton onClick={(e) => handleClickSubtitleListItem(url)}>
                         <ListItemAvatar>
                             <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${url}/default.jpg`} />
@@ -319,9 +317,9 @@ export default function SearchList(props) {
                                 {numMatches !== undefined ? <span>{`${numMatches} match${numMatches > 1 ? 'es' : ''}`}</span> : ''}
                                 {showMatchPreviews ?
                                 video.subtitles ? video.subtitles.slice(0, 3).map((subtitle, j) => (
-                                    <Typography noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }}>{subtitle.timestamp}: {subtitle.text}</Typography>
+                                    <Typography key={j} noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }}>{subtitle.timestamp}: {subtitle.text}</Typography>
                                 )) : video.matches ? video.matches.slice(0, 3).map((match, j) => (
-                                    <Typography noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }} dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>
+                                    <Typography key={j} noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }} dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>
                                 )) : '' : ''}
                             </Box>
                         } />
@@ -345,8 +343,7 @@ export default function SearchList(props) {
                                 {getVideoOptionsComponent(video, i)}
                             </Box>
                         </Box>
-                        <List component="div" disablePadding>
-                        <Box ref={subtitleContainerRef} sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <List disablePadding ref={subtitleContainerRef} sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
                             {
                                 video.subtitles ? video.subtitles.map((subtitle, j) => (
                                     <SubtitleListItem
@@ -366,11 +363,10 @@ export default function SearchList(props) {
                                 )) : ''
                             }
                             {((!video.matches && !video.subtitles) || video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => props.onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
-                        </Box>
                         </List>
                         </Paper>
                     </Collapse>
-                    </Box>
+                    </ListItem>
                 );
             })}
         </List>

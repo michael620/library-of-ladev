@@ -38,6 +38,9 @@ module.exports = {
         },
         fetchMetadata: {
             type: 'ref'
+        },
+        fetchAll: {
+            type: 'boolean'
         }
     },
   
@@ -47,7 +50,7 @@ module.exports = {
       }
     },
   
-    fn: async function ({text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchType, fetchMetadata }) {
+    fn: async function ({ text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchType, fetchMetadata, fetchAll }) {
         const SQL_FILTERS = `
         WITH ExcludedVideos AS (  -- Step 1: Exclude videos that contain unwanted tags
             SELECT DISTINCT tm.video_id
@@ -112,7 +115,7 @@ module.exports = {
             AND ($1::text IS NULL OR subtitle.text ILIKE $1)
             ORDER BY subtitle."startTime";
             `;
-            const rawResult = await sails.sendNativeQuery(RAW_SQL, [text ? `%${sanitizedText}%` : null, fetchMetadata]);
+            const rawResult = await sails.sendNativeQuery(RAW_SQL, [text && !fetchAll ? `%${sanitizedText}%` : null, fetchMetadata]);
             props.subtitleResult = processRawResultSubtitle(rawResult);
             if (!text) props.allSubtitlesFetched = true;
         } else if (text) {

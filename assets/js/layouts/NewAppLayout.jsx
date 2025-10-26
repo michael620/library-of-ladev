@@ -99,6 +99,31 @@ export default function NewAppLayout({ children }) {
         <ThemeProvider theme={theme}>
         <Box padding='1rem' display='flex' flexDirection='column' minHeight='100vh'>
         <CssBaseline />
+        <Link
+            href="#maincontent"
+            underline="none"
+            sx={{
+            position: 'absolute',
+            left: '-999px',
+            top: 'auto',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+            '&:focus, &:focus-visible': {
+                left: '1rem',
+                top: '1rem',
+                width: 'auto',
+                height: 'auto',
+                backgroundColor: 'background.paper',
+                p: '0.5rem 1rem',
+                zIndex: 9999,
+                borderRadius: 1,
+                boxShadow: 3,
+            },
+            }}
+        >
+            Skip to main content
+        </Link>
         <AppBar position="fixed">
             <Toolbar>
             <IconButton onClick={onClickHome} aria-label='Home'>
@@ -111,7 +136,14 @@ export default function NewAppLayout({ children }) {
         </AppBar>
         <Box flex='1'>
             <Offset />
+            <Box
+                id="maincontent"
+                component="main"
+                tabIndex={-1}
+                sx={{ outline: 'none' }}
+            >
             {children}
+            </Box>
         </Box>
         <Box>
             <Divider/>
