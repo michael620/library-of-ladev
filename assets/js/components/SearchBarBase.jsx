@@ -6,6 +6,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import InputAdornment from '@mui/material/InputAdornment';
 import SendIcon from '@mui/icons-material/Send';
 import SearchIcon from '@mui/icons-material/Search';
+import Box from '@mui/material/Box';
 
 export default function SearchBarBase(props) {
     const { showFullSearchBar, disabled, isLoading, placeholder } = props;
@@ -23,7 +24,7 @@ export default function SearchBarBase(props) {
         }
     }
     return (
-    <>
+    <Box padding={{ xs: '1rem', sm: 'unset' }}>
     <FormControl fullWidth={showFullSearchBar} style={{flexDirection: 'row'}}>
         <TextField
             placeholder={placeholder}
@@ -51,6 +52,6 @@ export default function SearchBarBase(props) {
         </IconButton> : ''}
     </FormControl>
     <LinearProgress sx={{ visibility: isLoading ? "visible" : "hidden" }}/>
-    </>
+    </Box>
     );
 }

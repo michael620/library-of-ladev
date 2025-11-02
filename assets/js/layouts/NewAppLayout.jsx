@@ -97,7 +97,7 @@ export default function NewAppLayout({ children }) {
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
         <ThemeProvider theme={theme}>
-        <Box padding='1rem' display='flex' flexDirection='column' minHeight='100vh'>
+        <Box padding={{ xs: '0rem', sm: '1rem' }} display='flex' flexDirection='column' minHeight='100vh'>
         <CssBaseline />
         <Link
             href="#maincontent"

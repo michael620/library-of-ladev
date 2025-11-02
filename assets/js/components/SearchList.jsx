@@ -40,29 +40,29 @@ import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/time
 
 const SubtitleListItem = memo((props) => {
     const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy } = props;
+    const [optionsAnchorEl, setOptionsAnchorEl] = useState(null);
+    const isOptionsOpen = Boolean(optionsAnchorEl);
+    const baseStyles = {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: 0,
+        paddingBottom: 0
+    };
+    const primaryText = <Typography maxHeight={{ xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
     return (
         <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style} disablePadding
         sx={(theme) => (isActive ? {
+            ...baseStyles,
             backgroundColor:'rgba(0, 0, 0, 0.25)',
             borderLeft: `0.25rem solid ${theme.palette.primary.main}`,
             transition: 'background-color 1s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: 0,
-            paddingBottom: 0
-        } : {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: 0,
-            paddingBottom: 0
-        })}
+        } : baseStyles)}
         >
             <ListItemButton onClick={() => handleClickSubtitle(startTime)} sx={{ flex: 1 }}>
-                <ListItemText primary={`${text}`} secondary={`Timestamp: ${timestamp}`} />
+                <ListItemText primary={primaryText} secondary={`Timestamp: ${timestamp}`} />
             </ListItemButton>
-            <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
+            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'none', 'sm': 'flex' }}}>
                 <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
                     <ArticleIcon />
                 </IconButton>
@@ -70,6 +70,21 @@ const SubtitleListItem = memo((props) => {
                     <LinkIcon />
                 </IconButton>
             </Box>
+            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'flex', 'sm': 'none' }}}>
+                <IconButton edge="end" aria-label="subtitle-options" title='More options' onClick={(e) => setOptionsAnchorEl(optionsAnchorEl ? null : e.currentTarget)}>
+                    <MoreVertIcon />
+                </IconButton>
+            </Box>
+            <Popper id={isOptionsOpen ? 'subtitle-options-popper' : undefined} open={isOptionsOpen} anchorEl={optionsAnchorEl} placement='bottom-end'>
+                <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
+                    <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
+                        <ArticleIcon />
+                    </IconButton>
+                    <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
+                        <LinkIcon />
+                    </IconButton>
+                </Box>
+            </Popper>
         </ListItem>
     )
 });
