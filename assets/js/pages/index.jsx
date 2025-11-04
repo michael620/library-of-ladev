@@ -46,9 +46,9 @@ export default function Index() {
                 <Typography align='center' sx={{marginBottom:2}}>An archive of stream VOD transcripts from the Twitch channel <Link target="_blank" href="https://www.twitch.tv/vedal987">vedal987</Link></Typography>
                 <Typography align='center' variant='h6' component='h2'>Some example searches:</Typography>
                 <Stack sx={{marginTop: 1}} direction="column" spacing={1}>
-                <Link align='center' component={InertiaLink} href="/search?text=meow%20meow%20lol">meow meow lol</Link>
-                <Link align='center' component={InertiaLink} href="/search?text=Ten%20tin%20cans">Ten tin cans</Link>
-                <Link align='center' component={InertiaLink} href="/search?text=Thank%20you%20so%20much%20for%20the%20sub%20Archerist">Thank you so much for the sub Archerist</Link>
+                <Link align='center' component={InertiaLink} href="/search?text=meow%20meow%20lol"><Typography variant='overline'>meow meow lol</Typography></Link>
+                <Link align='center' component={InertiaLink} href="/search?text=what%20is%20the%20%2A%20fact%20of%20the%20day">With wildcards: <Typography variant='overline'>what is the * fact of the day</Typography></Link>
+                <Link align='center' component={InertiaLink} href="/search?text=&includeTags[]=Themed&includeTags[]=Neuro&includeTags[]=Evil">With tags: <Typography variant='overline'>Themed stream + Neuro + Evil</Typography></Link>
                 </Stack>
             </CardContent>
             </Card>

@@ -51,7 +51,7 @@ const SubtitleListItem = memo((props) => {
     };
     const primaryText = <Typography maxHeight={{ xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
     return (
-        <ListItem data-subtitle-id={`${url}_${startTime}`} style={props.style} disablePadding
+        <ListItem ref={isActive ? props.currentSubtitle : null} style={props.style} disablePadding
         sx={(theme) => (isActive ? {
             ...baseStyles,
             backgroundColor:'rgba(0, 0, 0, 0.25)',
@@ -177,7 +177,8 @@ const SubtitleList = memo((props) => {
         currentTime,
         handleClickCopy,
         isLoadingSubtitle,
-        hostEl
+        hostEl,
+        currentSubtitle
     } = props;
     if (!hostEl || !video) return null;
     const { url } = video;
@@ -194,6 +195,7 @@ const SubtitleList = memo((props) => {
                         isActive={currentTime >= subtitle.startTime && currentTime < (video.subtitles[j+1] ? video.subtitles[j+1].startTime : Infinity)}
                         url={url}
                         handleClickCopy={handleClickCopy}
+                        currentSubtitle={currentSubtitle}
                     />
                 )) : video.matches ? video.matches.map((match, j) => (
                     <ListItem key={j}>
@@ -223,6 +225,7 @@ export default function SearchList(props) {
     const [isLoadingDownloadText, setIsLoadingDownloadText] = useState(false);
     const [hostEl, setHostEl] = useState(null);
     const [currentVideo, setCurrentVideo] = useState(null);
+    const currentSubtitle = useRef(null);
 
     const handleClickSubtitleListItem = useCallback((key, video, i) => {
         if (open === key) {
@@ -286,22 +289,23 @@ export default function SearchList(props) {
                 const currentTime = player.current.getCurrentTime();
                 setCurrentTime(Math.round(currentTime));
             }, 1000);
+        } else {
+            setCurrentTime(null);
         }
         return () => clearInterval(interval);
     }, [syncSubtitles, player.current]);
 
     useEffect(() => {
-        if (open && currentTime !== null) {
+        if (currentTime !== null) {
             const subtitleContainer = subtitleContainerRef.current;
-            const currentSubtitle = document.querySelector(`[data-subtitle-id="${open}_${currentTime}"]`);
-            if (subtitleContainer && currentSubtitle) {
+            if (subtitleContainer && currentSubtitle.current) {
                 subtitleContainer.scrollTo({
-                    top: currentSubtitle.offsetTop,
+                    top: currentSubtitle.current.offsetTop,
                     behavior: 'smooth'
                 });
             }
         }
-    }, [open, currentTime]);
+    }, [currentTime]);
 
     useEffect(() => {
         if (player.current) {
@@ -317,13 +321,15 @@ export default function SearchList(props) {
 
     let searchResultText;
     if (!props.text) {
-        searchResultText = 'Showing all videos. Use the search bar above to narrow results.';
+        searchResultText = props.noMoreResultsToFetch ?
+        `Displaying all ${props.searchResult?.length || 0} videos.` :
+        `Displaying ${props.searchResult?.length || 0} videos...`;
     } else if (!props.searchResult?.length) {
         searchResultText = `No results for "${props.text}".`;
     } else {
         searchResultText = props.noMoreResultsToFetch ?
-        `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
-        `Showing results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
+        `Displaying results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}".` :
+        `Displaying results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
     }
 
     const VideoOptionsPopper = currentVideo ? (
@@ -466,7 +472,8 @@ export default function SearchList(props) {
             handleClickCopy,
             isLoadingSubtitle,
             hostEl,
-            onFetchMoreSubtitles: props.onFetchMoreSubtitles
+            onFetchMoreSubtitles: props.onFetchMoreSubtitles,
+            currentSubtitle
         }}
         />
         </> : ''
