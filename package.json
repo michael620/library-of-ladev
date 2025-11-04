@@ -18,6 +18,7 @@
     "inertia-sails": "^0.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-window": "^2.2.1",
     "react-youtube": "^10.1.0",
     "sails": "^1.5.12",
     "sails-flash": "^0.0.1",

@@ -1,5 +1,7 @@
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
@@ -37,11 +39,36 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
+import { List as FixedSizeList } from 'react-window';
+
+const MatchListItem = memo((props) => {
+    const { index, matches } = props;
+    const text = matches[index].text;
+    return (
+        <ListItem style={props.style}>
+            <ListItemText primary={
+                <Typography
+                    height={{ xs: '4.5rem', sm: '3rem' }}
+                    sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}
+                    dangerouslySetInnerHTML={{ __html: `${text}` }}/>}
+                />
+        </ListItem>
+    );
+});
 
 const SubtitleListItem = memo((props) => {
-    const { isActive, handleClickSubtitle, text, startTime, timestamp, url, handleClickCopy } = props;
+    const { index, video, currentTime, handleClickSubtitle, handleClickCopy, setCurrentSubtitle } = props;
+    if (!video) return null;
+    const { url, subtitles } = video;
+    const { startTime, timestamp, text } = subtitles[index];
+    const isActive = currentTime === null ? false : currentTime >= startTime && currentTime < (subtitles[index+1] ? subtitles[index+1].startTime : Infinity);
     const [optionsAnchorEl, setOptionsAnchorEl] = useState(null);
     const isOptionsOpen = Boolean(optionsAnchorEl);
+    useEffect(() => {
+        if (isActive) {
+            setCurrentSubtitle(index);
+        }
+    }, [isActive, index]);
     const baseStyles = {
         display: 'flex',
         alignItems: 'center',
@@ -49,9 +76,9 @@ const SubtitleListItem = memo((props) => {
         paddingTop: 0,
         paddingBottom: 0
     };
-    const primaryText = <Typography maxHeight={{ xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
+    const primaryText = <Typography height={{ xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
     return (
-        <ListItem ref={isActive ? props.currentSubtitle : null} style={props.style} disablePadding
+        <ListItem style={props.style} disablePadding
         sx={(theme) => (isActive ? {
             ...baseStyles,
             backgroundColor:'rgba(0, 0, 0, 0.25)',
@@ -86,7 +113,7 @@ const SubtitleListItem = memo((props) => {
                 </Box>
             </Popper>
         </ListItem>
-    )
+    );
 });
 
 const VideoListItem = memo((props) => {
@@ -178,33 +205,39 @@ const SubtitleList = memo((props) => {
         handleClickCopy,
         isLoadingSubtitle,
         hostEl,
-        currentSubtitle
+        rowHeight,
+        setCurrentSubtitle,
+        onFetchMoreSubtitles,
     } = props;
     if (!hostEl || !video) return null;
     const { url } = video;
     return createPortal(
-        <List disablePadding ref={subtitleContainerRef} sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
-            {
-                video.subtitles ? video.subtitles.map((subtitle, j) => (
-                    <SubtitleListItem
-                        key={j}
-                        handleClickSubtitle={handleClickSubtitle}
-                        text={subtitle.text}
-                        startTime={subtitle.startTime}
-                        timestamp={subtitle.timestamp}
-                        isActive={currentTime >= subtitle.startTime && currentTime < (video.subtitles[j+1] ? video.subtitles[j+1].startTime : Infinity)}
-                        url={url}
-                        handleClickCopy={handleClickCopy}
-                        currentSubtitle={currentSubtitle}
-                    />
-                )) : video.matches ? video.matches.map((match, j) => (
-                    <ListItem key={j}>
-                        <ListItemText primary={<Typography dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>} />
-                    </ListItem>
-                )) : ''
-            }
-            {((!video.matches && !video.subtitles) || video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => props.onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
-        </List>
+        <>
+        {video.subtitles ? <FixedSizeList
+            style={{ maxHeight: '50vh', overflowY: 'auto' }}
+            listRef={subtitleContainerRef}
+            rowComponent={SubtitleListItem}
+            rowCount={video.subtitles.length}
+            rowHeight={rowHeight}
+            rowProps={{
+                video,
+                handleClickSubtitle,
+                handleClickCopy,
+                setCurrentSubtitle,
+                currentTime
+            }}
+        /> : video.matches ? <FixedSizeList
+            style={{ maxHeight: '50vh', overflowY: 'auto' }}
+            listRef={subtitleContainerRef}
+            rowComponent={MatchListItem}
+            rowCount={video.matches.length}
+            rowHeight={rowHeight}
+            rowProps={{
+                matches: video.matches
+            }}
+        /> : null}
+        {((!video.matches && !video.subtitles) || video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
+        </>
     , hostEl);
 });
 
@@ -225,7 +258,9 @@ export default function SearchList(props) {
     const [isLoadingDownloadText, setIsLoadingDownloadText] = useState(false);
     const [hostEl, setHostEl] = useState(null);
     const [currentVideo, setCurrentVideo] = useState(null);
-    const currentSubtitle = useRef(null);
+    const [currentSubtitle, setCurrentSubtitle] = useState(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleClickSubtitleListItem = useCallback((key, video, i) => {
         if (open === key) {
@@ -296,16 +331,10 @@ export default function SearchList(props) {
     }, [syncSubtitles, player.current]);
 
     useEffect(() => {
-        if (currentTime !== null) {
-            const subtitleContainer = subtitleContainerRef.current;
-            if (subtitleContainer && currentSubtitle.current) {
-                subtitleContainer.scrollTo({
-                    top: currentSubtitle.current.offsetTop,
-                    behavior: 'smooth'
-                });
-            }
+        if (currentSubtitle !== null && subtitleContainerRef.current) {
+            subtitleContainerRef.current.scrollToRow({align: 'start', index: currentSubtitle})
         }
-    }, [currentTime]);
+    }, [currentSubtitle]);
 
     useEffect(() => {
         if (player.current) {
@@ -463,18 +492,19 @@ export default function SearchList(props) {
         />
         {VideoOptionsPopper}
         <SubtitleList
-        {...{
-            subtitleContainerRef,
-            video: currentVideo?.video,
-            i: currentVideo?.i,
-            handleClickSubtitle,
-            currentTime,
-            handleClickCopy,
-            isLoadingSubtitle,
-            hostEl,
-            onFetchMoreSubtitles: props.onFetchMoreSubtitles,
-            currentSubtitle
-        }}
+            {...{
+                subtitleContainerRef,
+                video: currentVideo?.video,
+                handleClickSubtitle,
+                handleClickCopy,
+                currentTime,
+                setCurrentSubtitle,
+                onFetchMoreSubtitles: props.onFetchMoreSubtitles,
+                i: currentVideo?.i,
+                isLoadingSubtitle,
+                rowHeight: isMobile ? 120 : 96,
+                hostEl,
+            }}
         />
         </> : ''
     );
