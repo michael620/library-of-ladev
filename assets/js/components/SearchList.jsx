@@ -57,13 +57,11 @@ const MatchListItem = memo((props) => {
 });
 
 const SubtitleListItem = memo((props) => {
-    const { index, video, currentTime, handleClickSubtitle, handleClickCopy, setCurrentSubtitle } = props;
+    const { index, video, currentTime, handleClickSubtitle, handleClickCopy, setCurrentSubtitle, mobileOptionsAnchorEl, setMobileOptionsAnchorEl } = props;
     if (!video) return null;
     const { url, subtitles } = video;
     const { startTime, timestamp, text } = subtitles[index];
     const isActive = currentTime === null ? false : currentTime >= startTime && currentTime < (subtitles[index+1] ? subtitles[index+1].startTime : Infinity);
-    const [optionsAnchorEl, setOptionsAnchorEl] = useState(null);
-    const isOptionsOpen = Boolean(optionsAnchorEl);
     useEffect(() => {
         if (isActive) {
             setCurrentSubtitle(index);
@@ -98,20 +96,10 @@ const SubtitleListItem = memo((props) => {
                 </IconButton>
             </Box>
             <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'flex', 'sm': 'none' }}}>
-                <IconButton edge="end" aria-label="subtitle-options" title='More options' onClick={(e) => setOptionsAnchorEl(optionsAnchorEl ? null : e.currentTarget)}>
+                <IconButton edge="end" aria-label="subtitle-options" title='More options' onClick={(e) => setMobileOptionsAnchorEl(mobileOptionsAnchorEl === e.currentTarget ? null : e.currentTarget)}>
                     <MoreVertIcon />
                 </IconButton>
             </Box>
-            <Popper id={isOptionsOpen ? 'subtitle-options-popper' : undefined} open={isOptionsOpen} anchorEl={optionsAnchorEl} placement='bottom-end'>
-                <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
-                    <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
-                        <ArticleIcon />
-                    </IconButton>
-                    <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
-                        <LinkIcon />
-                    </IconButton>
-                </Box>
-            </Popper>
         </ListItem>
     );
 });
@@ -208,6 +196,8 @@ const SubtitleList = memo((props) => {
         rowHeight,
         setCurrentSubtitle,
         onFetchMoreSubtitles,
+        mobileOptionsAnchorEl,
+        setMobileOptionsAnchorEl
     } = props;
     if (!hostEl || !video) return null;
     const { url } = video;
@@ -224,7 +214,9 @@ const SubtitleList = memo((props) => {
                 handleClickSubtitle,
                 handleClickCopy,
                 setCurrentSubtitle,
-                currentTime
+                currentTime,
+                mobileOptionsAnchorEl,
+                setMobileOptionsAnchorEl
             }}
         /> : video.matches ? <FixedSizeList
             style={{ maxHeight: '50vh', overflowY: 'auto' }}
@@ -251,6 +243,8 @@ export default function SearchList(props) {
     const [currentTime, setCurrentTime] = useState(null);
     const [videoOptionsAnchorEl, setVideoOptionsAnchorEl] = useState(null);
     const isVideoOptionsOpen = Boolean(videoOptionsAnchorEl);
+    const [mobileOptionsAnchorEl, setMobileOptionsAnchorEl] = useState(null);
+    const isMobileOptionsOpen = Boolean(mobileOptionsAnchorEl);
     const [videoOptionsStartTime, setVideoOptionsStartTime] = useState(timeStrToDayJs('00:00:00'));
     const [videoOptionsEndTime, setVideoOptionsEndTime] = useState(timeStrToDayJs('00:00:00'));
     const [videoOptionsIncludeTimestamp, setVideoOptionsIncludeTimestamp] = useState(false);
@@ -449,6 +443,19 @@ export default function SearchList(props) {
         </Popper>
     ) : '';
 
+    const MobileOptionsPopper = (
+        <Popper id={isMobileOptionsOpen ? 'subtitle-options-popper' : undefined} open={isMobileOptionsOpen} anchorEl={mobileOptionsAnchorEl} placement='bottom-end'>
+            <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
+                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
+                    <ArticleIcon />
+                </IconButton>
+                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
+                    <LinkIcon />
+                </IconButton>
+            </Box>
+        </Popper>
+    );
+
     return (
         props.searchResult ? <>
         <ListSubheader component="div" sx={{zIndex: 0, lineHeight: 1.5}}>
@@ -491,6 +498,7 @@ export default function SearchList(props) {
             message={snackbarMessage}
         />
         {VideoOptionsPopper}
+        {MobileOptionsPopper}
         <SubtitleList
             {...{
                 subtitleContainerRef,
@@ -504,6 +512,8 @@ export default function SearchList(props) {
                 isLoadingSubtitle,
                 rowHeight: isMobile ? 120 : 96,
                 hostEl,
+                mobileOptionsAnchorEl,
+                setMobileOptionsAnchorEl
             }}
         />
         </> : ''
