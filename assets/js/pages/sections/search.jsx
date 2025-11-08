@@ -24,7 +24,6 @@ export default function Search(props) {
         if (noMoreResultsToFetch || isLoading) return;
         setIsLoading(true);
         let fetchType = props.searchParams?.isFullTextSearch ? FETCH_TYPE.PAGE_FTS : FETCH_TYPE.PAGE;
-        let fetchMetadata = fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : searchResult[searchResult.length - 1].url;
         router.visit('/search', {
             data: {
                 text: props.searchParams?.text,
@@ -35,7 +34,8 @@ export default function Search(props) {
                 includeTags: props.searchParams?.includeTags,
                 excludeTags: props.searchParams?.excludeTags,
                 fetchType,
-                fetchMetadata,
+                lastFtsIndex: fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : undefined,
+                lastUrl: fetchType === FETCH_TYPE.PAGE ? searchResult[searchResult.length - 1].url : undefined,
             },
             preserveState: true,
             preserveScroll: true,
@@ -56,7 +56,7 @@ export default function Search(props) {
         setIsLoadingSubtitle(true);
         const data = {
             fetchType: FETCH_TYPE.SUBTITLE,
-            fetchMetadata: url,
+            videoUrl: url,
             text: props.searchParams?.text,
             isFullTextSearch: props.searchParams?.isFullTextSearch,
             title: props.searchParams?.title,

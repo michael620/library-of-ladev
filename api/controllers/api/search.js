@@ -1,12 +1,49 @@
 module.exports = {
     friendlyName: 'API Search',
     description: 'API Search',
+    inputs: {
+        text: {
+            type: 'string'
+        },
+        isFullTextSearch: {
+            type: 'boolean'
+        },
+        title: {
+            type: 'string'
+        },
+        startDate: {
+            type: 'string'
+        },
+        endDate: {
+            type: 'string'
+        },
+        includeTags: {
+            type: 'ref'
+        },
+        excludeTags: {
+            type: 'ref'
+        },
+        fetchSize: {
+            type: 'number',
+            min: 1,
+            max: 100,
+        },
+        videoUrl: {
+            type: 'string'
+        },
+        lastUrl: {
+            type: 'string'
+        },
+        lastFtsIndex: {
+            type: 'number'
+        },
+    },
     exits: {
         json: {
             responseType: 'json'
         }
     },
-    fn: async function () {
+    fn: async function (inputParams) {
         try {
             const { FETCH_SIZE } = require('../../../shared/constants');
             const { processRawResult, processRawResultFTS, processRawResultSubtitle } = require('../../utils/utils');
@@ -16,28 +53,40 @@ module.exports = {
                 TEXT_SEARCH_RAW_SQL,
                 VIDEO_SEARCH_RAW_SQL,
                 sanitizeInput,
-                getTextSearchResults
+                getSubtitleSearchResults,
+                getTextSearchResults,
+                getVideoSearchResults
             } = require('../../utils/dbUtils');
-            const req = this.req;
-            const text = req.body?.text ?? req.query?.text ?? null;
-            const isFullTextSearch = req.body?.isFullTextSearch ?? req.query?.isFullTextSearch ?? false;
-            const title = req.body?.title ?? req.query?.title ?? null;
-            const startDate = req.body?.startDate ?? req.query?.startDate ?? null;
-            const endDate = req.body?.endDate ?? req.query?.endDate ?? null;
-            const includeTags = req.body?.includeTags ?? req.query?.includeTags ?? [];
-            const excludeTags = req.body?.excludeTags ?? req.query?.excludeTags ?? [];
-            const fetchSize = req.body?.fetchSize ?? req.query?.fetchSize ?? FETCH_SIZE;
-            const lastUrl = req.body?.lastUrl ?? req.query?.lastUrl ?? null;
-            const params = sanitizeInput({text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchSize, lastUrl});
-            const result = await getTextSearchResults(params);
-            const newLastUrl = result.length ? result[result.length-1].url : null;
+            let params;
+            try {
+                params = await sanitizeInput(inputParams);
+            } catch (err) {
+                return this.res.badRequest({ success: false, error: err instanceof Error ? err.message : err });
+            }
+            const {text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchSize, videoUrl, lastUrl} = params;
+            let result;
+            if (videoUrl) {
+                result = await getSubtitleSearchResults(params);
+            } else if (text) {
+                result = await getTextSearchResults(params);
+            } else {
+                result = await getVideoSearchResults(params);
+            }
+            const data = { result };
+            if (!videoUrl) {
+                if (!result.length || result.length < fetchSize) {
+                    data.noMoreResultsToFetch = true;
+                } else {
+                    data.lastUrl = result[result.length-1].url;
+                }
+            }
             return this.res.json({
                 success: true,
-                data: { result, lastUrl: newLastUrl },
+                data,
             });
         } catch (err) {
             sails.log.error(err);
-            return this.res.serverError('API Search encountered an error.');
+            return this.res.serverError('Library of Ladev API encountered an unexpected error.');
         }
     }
 }

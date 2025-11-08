@@ -108,15 +108,56 @@ WHERE true -- unused params
 ORDER BY v.date DESC, v.id
 LIMIT $2;
 `;
-const sanitizeInput = (params) => {
-    const {text, title} = params;
+const sanitizeInput = async (params) => {
+    const { FETCH_SIZE } = require('../../shared/constants');
+    const {text, title, fetchSize, startDate, endDate, videoUrl, lastUrl} = params;
+    let error = '';
+    const dayjs = require('dayjs');
+    if (startDate !== undefined && !dayjs(startDate, 'YYYY-MM-DD', true).isValid()) {
+        error += `Invalid date format for startDate: ${startDate}. Expected YYYY-MM-DD.\n`;
+    }
+    if (endDate !== undefined && !dayjs(endDate, 'YYYY-MM-DD', true).isValid()) {
+        error += `Invalid date format for endDate: ${endDate}. Expected YYYY-MM-DD.\n`;
+    }
+    if (videoUrl && !await Video.findOne({ url: videoUrl })) {
+        error += `No video found for videoUrl: ${videoUrl}.\n`;
+    }
+    if (lastUrl && !await Video.findOne({ url: lastUrl })) {
+        error += `No video found for lastUrl: ${lastUrl}.\n`;
+    }
     const sanitizedText = text?.replace(/\*/g, '%').replace(/\?/g, '_');
     const sanitizedTitle = title?.replace(/\*/g, '%').replace(/\?/g, '_');
+    if (error) throw new Error(error);
     return {
         ...params,
+        fetchSize: fetchSize || FETCH_SIZE,
         text: sanitizedText,
         title: sanitizedTitle
     }
+};
+const getSubtitleSearchResults = async (params) => {
+    const { processRawResultSubtitle } = require('./utils');
+    const {text, fetchAll, videoUrl} = params;
+    const rawResult = await sails.sendNativeQuery(SUBTITLE_SEARCH_RAW_SQL, [text && !fetchAll ? `%${text}%` : null, videoUrl]);
+    return processRawResultSubtitle(rawResult);
+};
+const getFTSSearchResults = async (params) => {
+    const { processRawResultFTS } = require('./utils');
+    const {text, title, startDate, endDate, includeTags, excludeTags, fetchSize, lastFtsIndex} = params;
+    const rawResult = await sails.sendNativeQuery(FTS_RAW_SQL, [
+        `${text}`, // $1
+        `${fetchSize}`, // $2
+        (title ? `%${title}%` : null), // $3
+        startDate, // $4
+        endDate, // $5
+        null, // $6
+        null, // $7
+        lastFtsIndex || 0, // $8
+        excludeTags, // $9
+        includeTags // $10
+    ]);
+    return processRawResultFTS(rawResult);
+    
 };
 const getTextSearchResults = async (params) => {
     const { processRawResult } = require('./utils');
@@ -136,13 +177,28 @@ const getTextSearchResults = async (params) => {
     ]);
     return processRawResult(rawResult);
 };
+const getVideoSearchResults = async (params) => {
+    const { processRawResult } = require('./utils');
+    const {title, startDate, endDate, includeTags, excludeTags, lastUrl, fetchSize} = params;
+    const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
+    const rawResult = await sails.sendNativeQuery(VIDEO_SEARCH_RAW_SQL, [
+        null, // $1
+        fetchSize, // $2
+        (title ? `%${title}%` : null), // $3
+        startDate, // $4
+        endDate, // $5
+        lastVideo?.date, // $6
+        lastVideo?.id, // $7
+        null, // $8
+        excludeTags, // $9
+        includeTags // $10
+    ]);
+    return processRawResult(rawResult);
+};
 module.exports = {
-    SQL_FILTERS,
-    SQL_VIDEO_TAGS,
-    SUBTITLE_SEARCH_RAW_SQL,
-    FTS_RAW_SQL,
-    TEXT_SEARCH_RAW_SQL,
-    VIDEO_SEARCH_RAW_SQL,
     sanitizeInput,
-    getTextSearchResults
+    getSubtitleSearchResults,
+    getFTSSearchResults,
+    getTextSearchResults,
+    getVideoSearchResults
 };
