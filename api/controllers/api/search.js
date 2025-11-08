@@ -81,7 +81,7 @@ module.exports = {
                 data,
             });
         } catch (err) {
-            sails.log.error(err);
+            sails.log.error(err instanceof Error ? err.message : err);
             return this.res.serverError('Library of Ladev API encountered an unexpected error.');
         }
     }

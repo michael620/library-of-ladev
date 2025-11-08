@@ -77,26 +77,33 @@ module.exports = {
             getVideoSearchResults
         } = require('../../utils/dbUtils');
         const { FETCH_SIZE, FETCH_TYPE } = require('../../../shared/constants');
-        const params = await sanitizeInput({text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchSize: FETCH_SIZE, fetchAll, lastUrl, videoUrl, lastFtsIndex});
-        if (fetchType === FETCH_TYPE.SUBTITLE) {
-            props.subtitleResult = await getSubtitleSearchResults(params);
-            if (fetchAll) props.allSubtitlesFetched = true;
-        } else if (text) {
-            if (isFullTextSearch) {
-                props.searchResult = await getFTSSearchResults(params);
-            } else {
-                props.searchResult = await getTextSearchResults(params);
+        try {
+            const params = await sanitizeInput({text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchSize: FETCH_SIZE, fetchAll, lastUrl, videoUrl, lastFtsIndex});
+            if (fetchType === FETCH_TYPE.SUBTITLE) {
+                props.subtitleResult = await getSubtitleSearchResults(params);
+                if (fetchAll) props.allSubtitlesFetched = true;
+            } else if (text) {
+                if (isFullTextSearch) {
+                    props.searchResult = await getFTSSearchResults(params);
+                } else {
+                    props.searchResult = await getTextSearchResults(params);
+                }
+                if (props.searchResult.length < FETCH_SIZE) {
+                    props.noMoreResultsToFetch = true;
+                }
+            } else if (text !== undefined) {
+                props.searchResult = await getVideoSearchResults(params);
+                if (props.searchResult.length < FETCH_SIZE) {
+                    props.noMoreResultsToFetch = true;
+                }
             }
-            if (props.searchResult.length < FETCH_SIZE) {
-                props.noMoreResultsToFetch = true;
-            }
-        } else if (text !== undefined) {
-            props.searchResult = await getVideoSearchResults(params);
-            if (props.searchResult.length < FETCH_SIZE) {
-                props.noMoreResultsToFetch = true;
-            }
+            return { page: 'sections/search', props };
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : err;
+            sails.log.error(errorMsg);
+            props.fatalError = errorMsg;
+            return { page: 'sections/search', props };
         }
-        return { page: 'sections/search', props }
     }
   }
   

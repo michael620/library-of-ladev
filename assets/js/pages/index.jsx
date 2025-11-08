@@ -33,7 +33,7 @@ export default function Index() {
         </Head>
         <Box>
             <Typography align='center' variant='h3' component='h1'>Library of Ladev</Typography>
-            <Card sx={{ minWidth: 275 }, {margin: 2}}>
+            <Card sx={{margin: 2}}>
             <CardContent>
                 <Box sx={{ mx: 'auto' }} maxWidth="md" marginBottom='1rem'>
                     <SearchBarBase

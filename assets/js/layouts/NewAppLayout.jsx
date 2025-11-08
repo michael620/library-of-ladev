@@ -150,9 +150,10 @@ export default function NewAppLayout({ children }) {
                 <Box textAlign='left' display='flex' flexDirection='column'>
                     <Typography fontWeight='bold' variant='caption'>Site Map</Typography>
                     <Box textAlign='left' display='flex' flexDirection='row' gap={2}>
-                        <Typography component={InertiaLink} href="/" variant='caption'>Home</Typography>
-                        <Typography component={InertiaLink} href="/search" variant='caption'>Search</Typography>
+                        <Typography component={InertiaLink} variant='caption' href="/">Home</Typography>
+                        <Typography component={InertiaLink} variant='caption' href="/search">Search</Typography>
                         <Typography component={InertiaLink} variant='caption' onClick={() => setAboutDialogOpen(true)}>About</Typography>
+                        <Typography component={InertiaLink} variant='caption' href="/docs">API</Typography>
                         {aboutDialogComponent}
                     </Box>
                 </Box>

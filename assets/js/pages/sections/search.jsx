@@ -6,6 +6,7 @@ import SearchList from '@/components/SearchList.jsx';
 import SearchBar from '@/components/SearchBar.jsx';
 import { Head, router } from '@inertiajs/react';
 import { FETCH_TYPE } from '../../../../shared/constants';
+import Alert from '@mui/material/Alert';
 
 Search.layout = (page) => <NewAppLayout children={page} />
 export default function Search(props) {
@@ -150,6 +151,7 @@ export default function Search(props) {
         setShowMatchPreviews={setShowMatchPreviews}
         tags={props.tags}
     />
+    {props.fatalError ? <Alert variant="filled" severity="error">{`Encountered a fatal error: ${props.fatalError}`}</Alert> : ''}
     <Paper elevation={1}>
         <SearchList
             searchResult={searchResult}
