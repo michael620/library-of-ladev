@@ -25,7 +25,7 @@ const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 
 export default function NewAppLayout({ children }) {
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-    const [isDarkMode, setIsDarkMode] = useState(
+    const [isDarkMode] = useState(
         prefersDarkMode ? true : false
     );
     const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
@@ -61,7 +61,7 @@ export default function NewAppLayout({ children }) {
             </Tabs>
             {tabValue === 0 ?
             <>
-                <Typography gutterBottom variant='body1'>Follow this project's discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1337595628607242282">Neuro-sama's Discord server</Link>.</Typography>
+                <Typography gutterBottom variant='body1'>Follow this project&apos;s discussion at <Link target="_blank" href="https://discord.com/channels/574720535888396288/1337595628607242282">Neuro-sama&apos;s Discord server</Link>.</Typography>
                 <Typography variant='body1'>This project is open source and available on <Link target="_blank" href="https://github.com/michael620/library-of-ladev">Github</Link>.</Typography>
             </> : ''
             }
@@ -82,7 +82,7 @@ export default function NewAppLayout({ children }) {
                 <Typography variant='body2'><b>Data and information</b>: This site does not collect, store, or process any personal data.</Typography>
                 <Typography variant="body1"><b>Terms of Use</b></Typography>
                 <Typography variant='body2'><b>Non-affiliation</b>: This site is a fan-made project and is not affiliated with Neuro-sama, Vedal, or any related entities.</Typography>
-                <Typography variant='body2'><b>Content and liability</b>: All information on this site is provided "as is" without warranties of any kind. The site does not guarantee the accuracy, completeness, or reliability of any content and is not liable for any errors or omissions.</Typography>
+                <Typography variant='body2'><b>Content and liability</b>: All information on this site is provided &quot;as is&quot; without warranties of any kind. The site does not guarantee the accuracy, completeness, or reliability of any content and is not liable for any errors or omissions.</Typography>
                 <Typography variant='body2'><b>Third-party content</b>: This site may contain third-party links and is not responsible for the policies or materials of the third-party.</Typography>
             </> : ''
             }

@@ -8,7 +8,7 @@ import { Head, router } from '@inertiajs/react';
 import { FETCH_TYPE } from '../../../../shared/constants';
 import Alert from '@mui/material/Alert';
 
-Search.layout = (page) => <NewAppLayout children={page} />
+Search.layout = (page) => <NewAppLayout>{page}</NewAppLayout>
 export default function Search(props) {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);

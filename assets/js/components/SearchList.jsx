@@ -1,32 +1,19 @@
-import { memo, useEffect, useRef, useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import Collapse from '@mui/material/Collapse';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DownloadIcon from '@mui/icons-material/Download';
 import BrowserUpdatedIcon from '@mui/icons-material/BrowserUpdated';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import Avatar from '@mui/material/Avatar';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
 import LinearProgress from '@mui/material/LinearProgress';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
-import Paper from '@mui/material/Paper';
-import Chip from '@mui/material/Chip';
-import YouTube from 'react-youtube';
 import LinkIcon from '@mui/icons-material/Link';
 import ArticleIcon from '@mui/icons-material/Article';
 import Popper from '@mui/material/Popper';
@@ -39,199 +26,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
-import { List as FixedSizeList } from 'react-window';
-
-const MatchListItem = memo((props) => {
-    const { index, matches } = props;
-    const text = matches[index].text;
-    return (
-        <ListItem style={props.style}>
-            <ListItemText primary={
-                <Typography
-                    height={{ xs: '4.5rem', sm: '3rem' }}
-                    sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}
-                    dangerouslySetInnerHTML={{ __html: `${text}` }}/>}
-                />
-        </ListItem>
-    );
-});
-
-const SubtitleListItem = memo((props) => {
-    const { index, video, currentTime, handleClickSubtitle, handleClickCopy, setCurrentSubtitle, mobileOptionsAnchorEl, setMobileOptionsAnchorEl } = props;
-    if (!video) return null;
-    const { url, subtitles } = video;
-    const { startTime, timestamp, text } = subtitles[index];
-    const isActive = currentTime === null ? false : currentTime >= startTime && currentTime < (subtitles[index+1] ? subtitles[index+1].startTime : Infinity);
-    useEffect(() => {
-        if (isActive) {
-            setCurrentSubtitle(index);
-        }
-    }, [isActive, index]);
-    const baseStyles = {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 0,
-        paddingBottom: 0
-    };
-    const primaryText = <Typography height={{ xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
-    return (
-        <ListItem style={props.style} disablePadding
-        sx={(theme) => (isActive ? {
-            ...baseStyles,
-            backgroundColor:'rgba(0, 0, 0, 0.25)',
-            borderLeft: `0.25rem solid ${theme.palette.primary.main}`,
-            transition: 'background-color 1s ease',
-        } : baseStyles)}
-        >
-            <ListItemButton onClick={() => handleClickSubtitle(startTime)} sx={{ flex: 1 }}>
-                <ListItemText primary={primaryText} secondary={`Timestamp: ${timestamp}`} />
-            </ListItemButton>
-            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'none', 'sm': 'flex' }}}>
-                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
-                    <ArticleIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
-                    <LinkIcon />
-                </IconButton>
-            </Box>
-            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'flex', 'sm': 'none' }}}>
-                <IconButton edge="end" aria-label="subtitle-options" title='More options' onClick={(e) => setMobileOptionsAnchorEl(mobileOptionsAnchorEl === e.currentTarget ? null : e.currentTarget)}>
-                    <MoreVertIcon />
-                </IconButton>
-            </Box>
-        </ListItem>
-    );
-});
-
-const VideoListItem = memo((props) => {
-    const {
-        video,
-        open,
-        setVideoOptionsAnchorEl,
-        handleClickSubtitleListItem,
-        i,
-        showTags,
-        showMatchPreviews,
-        toggleVideoOptions,
-        _onReady,
-        setHostEl
-    } = props;
-    const { url, title, date, total, subtitles } = video;
-    const ref = useRef(null);
-    useEffect(() => {
-        if (open===url) {
-            setHostEl(ref.current);
-        }
-    }, [open, setHostEl]);
-    let numMatches;
-    if (!props.text) {
-        numMatches = undefined;
-    } else if (subtitles) {
-        numMatches = Number(total);
-    } else if (video.matches) {
-        numMatches = video.matches.length;
-    }
-    return (
-        <ListItem key={url} disablePadding sx={{ display: 'block' }}>
-        <ListItemButton onClick={() => handleClickSubtitleListItem(url, video, i)}>
-            <ListItemAvatar>
-                <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${url}/default.jpg`} />
-            </ListItemAvatar>
-            <ListItemText primary={`${title} - ${date}`} disableTypography secondary={
-                <Box display='flex' flexDirection='column'>
-                    {(showTags && video.tags.length) ?
-                    <Box display='flex' flexDirection='row' flexWrap='wrap' sx={{gap: 1}}>
-                        {video.tags.map((tag, i) => (
-                            <Chip key={i} label={tag} size="small" color={props.tags[tag].color}/>
-                        ))}
-                    </Box> : ''}
-                    {numMatches !== undefined ? <span>{`${numMatches} match${numMatches > 1 ? 'es' : ''}`}</span> : ''}
-                    {showMatchPreviews ?
-                    video.subtitles ? video.subtitles.slice(0, 3).map((subtitle, j) => (
-                        <Typography key={j} noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }}>{subtitle.timestamp}: {subtitle.text}</Typography>
-                    )) : video.matches ? video.matches.slice(0, 3).map((match, j) => (
-                        <Typography key={j} noWrap variant='subtitle2' sx={{ textOverflow: 'ellipsis' }} dangerouslySetInnerHTML={{ __html: `${match.text}` }}></Typography>
-                    )) : '' : ''}
-                </Box>
-            } />
-            {open===url ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={open===url} timeout="auto" unmountOnExit onExit={() => setVideoOptionsAnchorEl(null)}>
-            <Paper elevation={2}>
-            <Box ref={ref}>
-                <Box>
-                    <YouTube
-                    videoId={url}
-                    opts={{
-                        playerVars: {
-                            // https://developers.google.com/youtube/player_parameters
-                            autoplay: 0,
-                        }
-                    }}
-                    onReady={_onReady}/>
-                </Box>
-                <Box>
-                    <IconButton onClick={toggleVideoOptions}>
-                        <MoreVertIcon />
-                    </IconButton>
-                </Box>
-            </Box>
-            </Paper>
-        </Collapse>
-        </ListItem>
-    );
-});
-
-const SubtitleList = memo((props) => {
-    const {
-        subtitleContainerRef,
-        video,
-        i,
-        handleClickSubtitle,
-        currentTime,
-        handleClickCopy,
-        isLoadingSubtitle,
-        hostEl,
-        rowHeight,
-        setCurrentSubtitle,
-        onFetchMoreSubtitles,
-        mobileOptionsAnchorEl,
-        setMobileOptionsAnchorEl
-    } = props;
-    if (!hostEl || !video) return null;
-    const { url } = video;
-    return createPortal(
-        <>
-        {video.subtitles ? <FixedSizeList
-            style={{ maxHeight: '50vh', overflowY: 'auto' }}
-            listRef={subtitleContainerRef}
-            rowComponent={SubtitleListItem}
-            rowCount={video.subtitles.length}
-            rowHeight={rowHeight}
-            rowProps={{
-                video,
-                handleClickSubtitle,
-                handleClickCopy,
-                setCurrentSubtitle,
-                currentTime,
-                mobileOptionsAnchorEl,
-                setMobileOptionsAnchorEl
-            }}
-        /> : video.matches ? <FixedSizeList
-            style={{ maxHeight: '50vh', overflowY: 'auto' }}
-            listRef={subtitleContainerRef}
-            rowComponent={MatchListItem}
-            rowCount={video.matches.length}
-            rowHeight={rowHeight}
-            rowProps={{
-                matches: video.matches
-            }}
-        /> : null}
-        {((!video.matches && !video.subtitles) || video.matches || video.noMoreSubtitlesToFetch) ? '' : <LinearProgress ref={(node) => onFetchMoreSubtitles(node, i, url)} sx={{ visibility: isLoadingSubtitle ? "visible" : "hidden" }}/>}
-        </>
-    , hostEl);
-});
+import SubtitleList from './SubtitleList';
+import VideoListItem from './VideoListItem';
 
 export default function SearchList(props) {
     const { isLoading, isLoadingSubtitle, showTags, syncSubtitles, showMatchPreviews } = props;
@@ -253,6 +49,7 @@ export default function SearchList(props) {
     const [hostEl, setHostEl] = useState(null);
     const [currentVideo, setCurrentVideo] = useState(null);
     const [currentSubtitle, setCurrentSubtitle] = useState(null);
+    const [popperSubtitle, setPopperSubtitle] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -265,6 +62,16 @@ export default function SearchList(props) {
             setCurrentVideo({ video, i });
         }
     }, [open]);
+
+    const handleClickMobileSubtitleOption = useCallback((event, text, url, startTime) => {
+        setMobileOptionsAnchorEl(mobileOptionsAnchorEl === event.currentTarget ? null : event.currentTarget);
+        setPopperSubtitle(mobileOptionsAnchorEl === event.currentTarget ? null : {text, url, startTime});
+    }, []);
+
+    const onCollapseVideoListItem = useCallback(() => {
+        setVideoOptionsAnchorEl(null);
+        setMobileOptionsAnchorEl(null);
+    }, []);
 
     const handleClickSubtitle = useCallback((startTime) => {
         player.current.seekTo(startTime);
@@ -446,10 +253,10 @@ export default function SearchList(props) {
     const MobileOptionsPopper = (
         <Popper id={isMobileOptionsOpen ? 'subtitle-options-popper' : undefined} open={isMobileOptionsOpen} anchorEl={mobileOptionsAnchorEl} placement='bottom-end'>
             <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
-                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
+                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, popperSubtitle?.text)}>
                     <ArticleIcon />
                 </IconButton>
-                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
+                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${popperSubtitle?.url}&t=${popperSubtitle?.startTime}s`)}>
                     <LinkIcon />
                 </IconButton>
             </Box>
@@ -470,7 +277,7 @@ export default function SearchList(props) {
                     {...{
                         video,
                         open,
-                        setVideoOptionsAnchorEl,
+                        onCollapseVideoListItem,
                         handleClickSubtitleListItem,
                         i,
                         showTags,
@@ -512,8 +319,7 @@ export default function SearchList(props) {
                 isLoadingSubtitle,
                 rowHeight: isMobile ? 120 : 96,
                 hostEl,
-                mobileOptionsAnchorEl,
-                setMobileOptionsAnchorEl
+                handleClickMobileSubtitleOption
             }}
         />
         </> : ''

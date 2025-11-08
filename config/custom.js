@@ -13,7 +13,7 @@ module.exports.custom = {
    *                                                                         *
    * The base URL to use during development.                                 *
    *                                                                         *
-   * • No trailing slash at the end                                          *
+   * • No trailing slash at the end                                          *
    * • `http://` or `https://` at the beginning.                             *
    *                                                                         *
    * > This is for use in custom logic that builds URLs.                     *
@@ -40,7 +40,6 @@ module.exports.custom = {
   rememberMeCookieMaxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 
   // Email address for receiving support messages & other correspondences.
-  internalEmail: 'support+development@example.com',
 
   /***************************************************************************
    *                                                                          *

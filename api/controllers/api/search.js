@@ -58,7 +58,7 @@ module.exports = {
             } catch (err) {
                 return this.res.badRequest({ success: false, error: err instanceof Error ? err.message : err });
             }
-            const {text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchSize, videoUrl, lastUrl} = params;
+            const {text, fetchSize, videoUrl} = params;
             let result;
             if (videoUrl) {
                 result = await getOneVideo(videoUrl);

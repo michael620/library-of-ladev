@@ -6,7 +6,7 @@ module.exports = function dbRefreshHook(sails) {
             try {
                 const { TAG_TYPES } = require('../../../shared/constants');
                 const tags = await sails.sendNativeQuery(`SELECT name, tag_type from Tag;`);
-                for (row of tags.rows) {
+                for (const row of tags.rows) {
                     switch (row.tag_type) {
                         case TAG_TYPES.APPEARANCES.text:
                             TAGS[row.name] = TAG_TYPES.APPEARANCES;

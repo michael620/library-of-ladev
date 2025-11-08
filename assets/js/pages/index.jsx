@@ -8,7 +8,7 @@ import SearchBarBase from '@/components/SearchBarBase.jsx';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 
-Index.layout = (page) => <NewAppLayout children={page} />
+Index.layout = (page) => <NewAppLayout>{page}</NewAppLayout>
 export default function Index() {
     const theme = useTheme();
     const isLargeScreen = useMediaQuery(theme.breakpoints.up('sm'));

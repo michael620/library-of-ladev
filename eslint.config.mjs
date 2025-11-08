@@ -1,7 +1,18 @@
 import js from "@eslint/js";
 import globals from "globals";
+import path from 'path';
+import fs from 'fs';
 import reactPlugin from "eslint-plugin-react";
 import { defineConfig } from "eslint/config";
+
+const modelDir = path.resolve("api/models");
+const modelGlobals = {};
+if (fs.existsSync(modelDir)) {
+    for (const file of fs.readdirSync(modelDir)) {
+        const modelName = path.basename(file, path.extname(file));
+        modelGlobals[modelName] = true;
+    }
+}
 
 export default defineConfig([
     // Base
@@ -27,6 +38,7 @@ export default defineConfig([
             sourceType: "commonjs",
             globals: {
                 ...globals.node,
+                ...modelGlobals,
                 sails: true,
                 _: true,
             },
@@ -56,5 +68,10 @@ export default defineConfig([
             "react/react-in-jsx-scope": "off",
             "react/prop-types": "off",
         },
+        settings: {
+            react: {
+                version: "detect"
+            }
+        }
     },
 ]);

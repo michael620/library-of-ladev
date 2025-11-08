@@ -284,11 +284,11 @@ export default function SearchBar(props) {
                 <Typography variant="h6">Full Text Search</Typography>
                 <Typography variant="body1">
                     Search from the entire video transcript, no timestamp<br/>
-                    <b>Note</b>: Snippets are ranked by relevance. It doesn't work well if the search terms match across a large context window.<br/>
+                    <b>Note</b>: Snippets are ranked by relevance. It doesn&apos;t work well if the search terms match across a large context window.<br/>
                     <b>Tip</b>: You can use Full Text Search first, then search again once you find the exact sentence with Full Text Search off to locate the timestamp.<br/><br/>
                 </Typography>
                 <Typography variant="h6">Search syntax (Full Text Search)</Typography>
-                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>"quoted text"</b></Typography>
+                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>&quot;quoted text&quot;</b></Typography>
                 <Typography display='inline' variant="body1">: Matches the exact phrase<br/></Typography>
                 <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>or</b></Typography>
                 <Typography display='inline' variant="body1">: Matches x or y<br/></Typography>

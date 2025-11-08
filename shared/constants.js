@@ -39,7 +39,6 @@ const timeStrToDayJs = (timeStr) => {
 }
 
 const dayJsToSeconds = (time) => {
-    const dayjs = require('dayjs');
     return time.hour() * 3600 + time.minute() * 60 + time.second();
 }
 
