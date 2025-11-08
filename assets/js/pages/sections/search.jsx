@@ -107,7 +107,7 @@ export default function Search(props) {
                     fetchMoreResults();
                 }
             });
-            if (node) observer.current.observe(node);
+            observer.current.observe(node);
         },
         [isLoading]
     );
@@ -125,6 +125,12 @@ export default function Search(props) {
         },
         [isLoadingSubtitle]
     );
+    useEffect(() => {
+        return () => {
+            observer.current?.disconnect();
+            observerSubtitle.current?.disconnect();
+        };
+    }, []);
     return (
     <Box>
     <Head>
