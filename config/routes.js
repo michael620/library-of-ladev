@@ -26,6 +26,12 @@ module.exports.routes = {
   'POST /api/search': 'api/search',
   'GET /api/export-transcript': 'sections/export-transcript',
 
+  'GET /docs/swagger.json': async function (_req, res) {
+    return res.sendFile(
+      require('path').resolve(__dirname, '../assets/docs/swagger.json')
+    );
+  },
+
   'GET /signup': 'auth/view-signup',
   'POST /signup': 'auth/signup',
 

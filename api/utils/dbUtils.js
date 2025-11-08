@@ -141,6 +141,10 @@ const getSubtitleSearchResults = async (params) => {
     const rawResult = await sails.sendNativeQuery(SUBTITLE_SEARCH_RAW_SQL, [text && !fetchAll ? `%${text}%` : null, videoUrl]);
     return processRawResultSubtitle(rawResult);
 };
+const getOneVideo = async (videoUrl) => {
+    const {title, url, date} = await Video.findOne({ url: videoUrl });
+    return {title, url, date};
+};
 const getFTSSearchResults = async (params) => {
     const { processRawResultFTS } = require('./utils');
     const {text, title, startDate, endDate, includeTags, excludeTags, fetchSize, lastFtsIndex} = params;
@@ -197,6 +201,7 @@ const getVideoSearchResults = async (params) => {
 };
 module.exports = {
     sanitizeInput,
+    getOneVideo,
     getSubtitleSearchResults,
     getFTSSearchResults,
     getTextSearchResults,

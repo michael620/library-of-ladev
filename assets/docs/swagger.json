@@ -1,0 +1,340 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Library of Ladev API Docs"
+    },
+    "paths": {
+        "/api/search": {
+            "get": {
+                "summary": "Search videos and subtitles (with query parameters)",
+                "description": "Search endpoint using query parameters.\n1. If `videoUrl` is defined, returns all subtitles of that video.\n2. Else if `text` is defined, returns subtitles of videos that match the text.\n3. Else, returns all videos (no subtitles).\n\nNote: Pagination is based on fetchSize (default 25). `lastUrl` is used as the pagination cursor (returned in the response if more pages are available, else `noMoreResultsToFetch` is returned)",
+                "parameters": [
+                    {
+                        "name": "text",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "isFullTextSearch",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Currently not used"
+                    },
+                    {
+                        "name": "title",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "description": "YYYY-MM-DD"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "description": "YYYY-MM-DD"
+                    },
+                    {
+                        "name": "includeTags",
+                        "in": "query",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Array of tag strings"
+                    },
+                    {
+                        "name": "excludeTags",
+                        "in": "query",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Array of tag strings"
+                    },
+                    {
+                        "name": "fetchSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "videoUrl",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "lastUrl",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Cursor for pagination"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/SearchResponse"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Search videos and subtitles (with POST body)",
+                "description": "Search endpoint using JSON body. Same behavior as GET.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SearchRequestBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/SearchResponse"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SearchRequestBody": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string"
+                    },
+                    "isFullTextSearch": {
+                        "type": "boolean"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "YYYY-MM-DD"
+                    },
+                    "endDate": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "YYYY-MM-DD"
+                    },
+                    "includeTags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "excludeTags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "fetchSize": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "videoUrl": {
+                        "type": "string"
+                    },
+                    "lastUrl": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Subtitle": {
+                "type": "object",
+                "properties": {
+                    "startTime": {
+                        "type": "number",
+                        "description": "Start time in seconds"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "description": "HH:MM:SS"
+                    },
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Video": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "YouTube URL"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Upload date"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "responses": {
+            "SearchResponse": {
+                "description": "Search results for subtitles or videos",
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "TextSubtitles": {
+                                "summary": "Subtitles from all videos (params include `text`)",
+                                "value": {
+                                    "success": true,
+                                    "data": {
+                                        "result": [
+                                            {
+                                                "url": "cBkEcBuioxQ",
+                                                "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 1",
+                                                "date": "2022-12-20",
+                                                "tags": [
+                                                    "Chill",
+                                                    "Gaming",
+                                                    "Neuro"
+                                                ],
+                                                "total": "2",
+                                                "subtitles": [
+                                                    {
+                                                        "startTime": 337,
+                                                        "timestamp": "00:05:37",
+                                                        "text": "I don't know my creator Vedal won't tell me."
+                                                    },
+                                                    {
+                                                        "startTime": 519,
+                                                        "timestamp": "00:08:39",
+                                                        "text": "Vedal."
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "url": "ni5KynRy4Ec",
+                                                "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 2",
+                                                "date": "2022-12-20",
+                                                "tags": [
+                                                    "Chill",
+                                                    "Gaming",
+                                                    "Neuro"
+                                                ],
+                                                "total": "57",
+                                                "subtitles": [
+                                                    {
+                                                        "startTime": 241,
+                                                        "timestamp": "00:04:01",
+                                                        "text": "I'm an artificial intelligence created by Vedal who I share my consciousness with."
+                                                    },
+                                                    {
+                                                        "startTime": 484,
+                                                        "timestamp": "00:08:04",
+                                                        "text": "Anyone else want to shut up Vedal?"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "lastUrl": "ni5KynRy4Ec"
+                                    }
+                                }
+                            },
+                            "VideoSubtitles": {
+                                "summary": "Subtitles for one video (params include `videoUrl`)",
+                                "value": {
+                                    "success": true,
+                                    "data": {
+                                        "result": {
+                                            "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 1",
+                                            "url": "cBkEcBuioxQ",
+                                            "date": "2022-12-20",
+                                            "subtitles": [
+                                                {
+                                                    "startTime": 337,
+                                                    "timestamp": "00:05:37",
+                                                    "text": "I don't know my creator Vedal won't tell me."
+                                                },
+                                                {
+                                                    "startTime": 519,
+                                                    "timestamp": "00:08:39",
+                                                    "text": "Vedal."
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "VideosOnly": {
+                                "summary": "All videos (params do not include `text`)",
+                                "value": {
+                                    "success": true,
+                                    "data": {
+                                        "result": [
+                                            {
+                                                "url": "ni5KynRy4Ec",
+                                                "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 2",
+                                                "date": "2022-12-20",
+                                                "tags": [
+                                                    "Chill",
+                                                    "Gaming",
+                                                    "Neuro"
+                                                ]
+                                            },
+                                            {
+                                                "url": "cBkEcBuioxQ",
+                                                "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 1",
+                                                "date": "2022-12-20",
+                                                "tags": [
+                                                    "Chill",
+                                                    "Gaming",
+                                                    "Neuro"
+                                                ]
+                                            }
+                                        ],
+                                        "lastUrl": "cBkEcBuioxQ"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
