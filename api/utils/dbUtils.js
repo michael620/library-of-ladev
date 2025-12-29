@@ -23,7 +23,14 @@ FilteredVideosWithMeta AS (  -- Step 3: Filter on video.date, video.title, and p
     AND ($4::text IS NULL OR v.date >= $4)  -- Start date filter (if provided)
     AND ($5::text IS NULL OR v.date <= $5)  -- End date filter (if provided)
     AND ($3::text IS NULL OR v.title ILIKE $3)  -- Title filter (if provided)
-    AND (($6::text IS NULL OR $7::INTEGER IS NULL) OR (v.date, v.id) < ($6, $7::INTEGER)) -- Pagination
+    AND ( -- Pagination
+        ($6::text IS NULL OR $7::INTEGER IS NULL OR $11::BIGINT IS NULL)
+        OR (
+            v.date < $6
+            OR (v.date = $6 AND v.updated_at < $11)
+            OR (v.date = $6 AND v.updated_at = $11 AND v.id > $7)
+        )
+    )
 )
 `;
 const SQL_VIDEO_TAGS = `
@@ -67,7 +74,7 @@ OFFSET $8;`;
 const TEXT_SEARCH_RAW_SQL = `
 ${SQL_FILTERS},
 RankedSubtitles AS (
-    SELECT subtitle.text, subtitle."startTime", video.url, video.title, video.id AS video_id, video.date,
+    SELECT subtitle.text, subtitle."startTime", video.url, video.title, video.id AS video_id, video.date, video.updated_at as video_updated_at,
         ROW_NUMBER() OVER (PARTITION BY video.id ORDER BY subtitle."startTime" ASC) AS row_num
     FROM subtitle
     JOIN video ON subtitle.owner = video.id
@@ -78,7 +85,7 @@ LimitedVideos AS (
     SELECT video.id
     FROM video
     WHERE id IN (SELECT DISTINCT video_id FROM RankedSubtitles)
-    ORDER BY video.date DESC, video.id
+    ORDER BY video.date DESC, video.updated_at DESC, video.id
     LIMIT $8
 ),
 TotalCount AS (
@@ -93,7 +100,7 @@ JOIN LimitedVideos lv ON s.video_id = lv.id
 JOIN TotalCount tc ON lv.id = tc.video_id
 LEFT JOIN VideoTags vt ON lv.id = vt.video_id
 WHERE s.row_num <= $2
-ORDER BY s.date DESC, s.video_id DESC, s."startTime";
+ORDER BY s.date DESC, s.video_updated_at DESC, s.video_id, s."startTime";
 `;
 const VIDEO_SEARCH_RAW_SQL = `
 ${SQL_FILTERS},
@@ -105,7 +112,7 @@ LEFT JOIN VideoTags vt ON v.id = vt.video_id
 WHERE true -- unused params
     OR $1::text IS NULL
     OR $8::int IS NULL
-ORDER BY v.date DESC, v.id
+ORDER BY v.date DESC, v.updated_at DESC, v.id
 LIMIT $2;
 `;
 const sanitizeInput = async (params) => {
@@ -158,7 +165,8 @@ const getFTSSearchResults = async (params) => {
         null, // $7
         lastFtsIndex || 0, // $8
         excludeTags, // $9
-        includeTags // $10
+        includeTags, // $10
+        null // $11
     ]);
     return processRawResultFTS(rawResult);
     
@@ -177,7 +185,8 @@ const getTextSearchResults = async (params) => {
         lastVideo?.id, // $7
         fetchSize, // $8
         excludeTags, // $9
-        includeTags // $10
+        includeTags, // $10
+        lastVideo?.updatedAt.toString() // $11
     ]);
     return processRawResult(rawResult);
 };
@@ -195,7 +204,8 @@ const getVideoSearchResults = async (params) => {
         lastVideo?.id, // $7
         null, // $8
         excludeTags, // $9
-        includeTags // $10
+        includeTags, // $10
+        lastVideo?.updatedAt.toString() // $11
     ]);
     return processRawResult(rawResult);
 };
