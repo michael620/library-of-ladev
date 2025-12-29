@@ -8,6 +8,7 @@ import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { router } from '@inertiajs/react';
 import TuneIcon from '@mui/icons-material/Tune';
 import SettingsIcon from '@mui/icons-material/Settings';
+import SortIcon from '@mui/icons-material/Sort';
 import Popper from '@mui/material/Popper';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -15,6 +16,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -70,6 +75,7 @@ export default function SearchBar(props) {
     const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, syncSubtitles, setSyncSubtitles, showMatchPreviews, setShowMatchPreviews } = props;
     const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = useState(props.searchParams?.title || '');
+    const [isAscending, setIsAscending] = useState(props.searchParams?.isAscending || false);
     const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
     const [endDate, setEndDate] = useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
     const [includeTags, setIncludeTags] = useState(props.searchParams?.includeTags || []);
@@ -94,6 +100,7 @@ export default function SearchBar(props) {
 
     const handleReset = () => {
         setTitle('');
+        setIsAscending(false);
         setStartDate(null);
         setEndDate(null);
         setIncludeTags([]);
@@ -101,6 +108,9 @@ export default function SearchBar(props) {
     };
     const onChangeTitle = (event) => {
         setTitle(event?.target?.value || '');
+    };
+    const onChangeIsAscending = (event) => {
+        setIsAscending(event?.target?.value);
     };
     const onChangeFullTextSearch = (event) => {
         setIsFullTextSearch(event.target.checked);
@@ -132,6 +142,9 @@ export default function SearchBar(props) {
         }
         if (title) {
             data.title = title;
+        }
+        if (isAscending) {
+            data.isAscending = true;
         }
         if (startDate) {
             data.startDate = startDate.format('YYYY-MM-DD');
@@ -209,12 +222,28 @@ export default function SearchBar(props) {
             <Card>
             <CardContent>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
-            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
+            <Box display='flex' flexDirection='row' justifyContent='space-between' alignItems='center' sx={{gap:2}}>
                 <TextField
+                    fullWidth
                     label={'Title'}
                     onChange={onChangeTitle}
                     value={title}
                 />
+                <FormControl fullWidth>
+                    <InputLabel id="sort-label"><SortIcon/> Sort</InputLabel>
+                    <Select
+                        labelId="sort-label"
+                        value={isAscending}
+                        onChange={onChangeIsAscending}
+                        label="Sort"
+                        MenuProps={{
+                            disableScrollLock: true
+                        }}
+                    >
+                        <MenuItem value={true}>Oldest First</MenuItem>
+                        <MenuItem value={false}>Newest First</MenuItem>
+                    </Select>
+                </FormControl>
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                 <DatePicker

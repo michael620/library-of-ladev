@@ -17,6 +17,10 @@ module.exports = {
             description: 'title',
             type: 'string'
         },
+        isAscending: {
+            description: 'isAscending',
+            type: 'boolean'
+        },
         startDate: {
             description: 'startDate',
             type: 'string'
@@ -56,12 +60,13 @@ module.exports = {
       }
     },
   
-    fn: async function ({ text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchType, videoUrl, lastUrl, lastFtsIndex, fetchAll }) {
+    fn: async function ({ text, isFullTextSearch, title, isAscending, startDate, endDate, includeTags, excludeTags, fetchType, videoUrl, lastUrl, lastFtsIndex, fetchAll }) {
         const props = {
             searchParams: {
                 text,
                 isFullTextSearch,
                 title,
+                isAscending,
                 startDate,
                 endDate,
                 includeTags,
@@ -78,7 +83,7 @@ module.exports = {
         } = require('../../utils/dbUtils');
         const { FETCH_SIZE, FETCH_TYPE } = require('../../../shared/constants');
         try {
-            const params = await sanitizeInput({text, isFullTextSearch, title, startDate, endDate, includeTags, excludeTags, fetchSize: FETCH_SIZE, fetchAll, lastUrl, videoUrl, lastFtsIndex});
+            const params = await sanitizeInput({text, isFullTextSearch, title, isAscending, startDate, endDate, includeTags, excludeTags, fetchSize: FETCH_SIZE, fetchAll, lastUrl, videoUrl, lastFtsIndex});
             if (fetchType === FETCH_TYPE.SUBTITLE) {
                 props.subtitleResult = await getSubtitleSearchResults(params);
                 if (fetchAll) props.allSubtitlesFetched = true;

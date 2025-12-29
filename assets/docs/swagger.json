@@ -7,7 +7,8 @@
         "/api/search": {
             "get": {
                 "summary": "Search videos and subtitles (with query parameters)",
-                "description": "Search endpoint using query parameters.\n1. If `videoUrl` is defined, returns all subtitles of that video.\n2. Else if `text` is defined, returns subtitles of videos that match the text.\n3. Else, returns all videos (no subtitles).\n\nNote: Pagination is based on fetchSize (default 25). `lastUrl` is used as the pagination cursor (returned in the response if more pages are available, else `noMoreResultsToFetch` is returned)",
+                "description": "Search endpoint using query parameters.\n1. Case 1: If `videoUrl` is defined, returns all subtitles of that video.\n2. Case 2: Else if `text` is defined, returns subtitles of videos that match the text.\n3. Case 3: Else, returns all videos (no subtitles).",
+                
                 "parameters": [
                     {
                         "name": "text",
@@ -30,6 +31,14 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "isAscending",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Sort results by date in ascending order (default is false if unset)"
                     },
                     {
                         "name": "startDate",
@@ -78,7 +87,8 @@
                             "type": "integer",
                             "minimum": 1,
                             "maximum": 100
-                        }
+                        },
+                        "description": "Pagination is based on `fetchSize`, default is 25 if unset (i.e. how many results are returned)"
                     },
                     {
                         "name": "videoUrl",
@@ -93,7 +103,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Cursor for pagination"
+                        "description": "Cursor for pagination - returned in the response if more pages are available, else `noMoreResultsToFetch` is returned"
                     }
                 ],
                 "responses": {
@@ -111,6 +121,25 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/SearchRequestBody"
+                            },
+                            "examples": {
+                                "SearchExample1": {
+                                    "summary": "No params included",
+                                    "value": {}
+                                },
+                                "SearchExample2": {
+                                    "summary": "Params included",
+                                    "value": {
+                                        "text": "",
+                                        "title": "",
+                                        "isAscending": true,
+                                        "startDate": "2025-01-01",
+                                        "endDate": "2025-12-31",
+                                        "includeTags": ["Neuro", "Evil", "Themed"],
+                                        "excludeTags": [],
+                                        "fetchSize": 10
+                                    }
+                                }
                             }
                         }
                     }
@@ -132,10 +161,15 @@
                         "type": "string"
                     },
                     "isFullTextSearch": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Currently not used"
                     },
                     "title": {
                         "type": "string"
+                    },
+                    "isAscending": {
+                        "type": "boolean",
+                        "description": "Sort results by date in ascending order (default is false if unset)"
                     },
                     "startDate": {
                         "type": "string",
@@ -162,13 +196,15 @@
                     "fetchSize": {
                         "type": "integer",
                         "minimum": 1,
-                        "maximum": 100
+                        "maximum": 100,
+                        "description": "Pagination is based on `fetchSize`, default is 25 if unset (i.e. how many results are returned)"
                     },
                     "videoUrl": {
                         "type": "string"
                     },
                     "lastUrl": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Cursor for pagination - returned in the response if more pages are available, else `noMoreResultsToFetch` is returned"
                     }
                 }
             },
@@ -218,8 +254,33 @@
                 "content": {
                     "application/json": {
                         "examples": {
+                            "VideoSubtitles": {
+                                "summary": "Subtitles for one video (Case 1: params include `videoUrl`)",
+                                "value": {
+                                    "success": true,
+                                    "data": {
+                                        "result": {
+                                            "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 1",
+                                            "url": "cBkEcBuioxQ",
+                                            "date": "2022-12-20",
+                                            "subtitles": [
+                                                {
+                                                    "startTime": 337,
+                                                    "timestamp": "00:05:37",
+                                                    "text": "I don't know my creator Vedal won't tell me."
+                                                },
+                                                {
+                                                    "startTime": 519,
+                                                    "timestamp": "00:08:39",
+                                                    "text": "Vedal."
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
                             "TextSubtitles": {
-                                "summary": "Subtitles from all videos (params include `text`)",
+                                "summary": "Subtitles from all videos (Case 2: params include `text`)",
                                 "value": {
                                     "success": true,
                                     "data": {
@@ -275,33 +336,8 @@
                                     }
                                 }
                             },
-                            "VideoSubtitles": {
-                                "summary": "Subtitles for one video (params include `videoUrl`)",
-                                "value": {
-                                    "success": true,
-                                    "data": {
-                                        "result": {
-                                            "title": "AI learns to play osu! (and become a Vtuber) - Day 2 part 1",
-                                            "url": "cBkEcBuioxQ",
-                                            "date": "2022-12-20",
-                                            "subtitles": [
-                                                {
-                                                    "startTime": 337,
-                                                    "timestamp": "00:05:37",
-                                                    "text": "I don't know my creator Vedal won't tell me."
-                                                },
-                                                {
-                                                    "startTime": 519,
-                                                    "timestamp": "00:08:39",
-                                                    "text": "Vedal."
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            },
                             "VideosOnly": {
-                                "summary": "All videos (params do not include `text`)",
+                                "summary": "All videos (Case 3: params do not include `text`)",
                                 "value": {
                                     "success": true,
                                     "data": {

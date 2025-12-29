@@ -1,4 +1,4 @@
-const SQL_FILTERS = `
+const SQL_FILTERS = (isAscending) => `
 WITH ExcludedVideos AS (  -- Step 1: Exclude videos that contain unwanted tags
     SELECT DISTINCT tm.video_id
     FROM tagmap tm
@@ -26,8 +26,8 @@ FilteredVideosWithMeta AS (  -- Step 3: Filter on video.date, video.title, and p
     AND ( -- Pagination
         ($6::text IS NULL OR $7::INTEGER IS NULL OR $11::BIGINT IS NULL)
         OR (
-            v.date < $6
-            OR (v.date = $6 AND v.updated_at < $11)
+            v.date ${isAscending ? '>' : '<'} $6
+            OR (v.date = $6 AND v.updated_at ${isAscending ? '>' : '<'} $11)
             OR (v.date = $6 AND v.updated_at = $11 AND v.id > $7)
         )
     )
@@ -53,7 +53,7 @@ AND ($1::text IS NULL OR subtitle.text ILIKE $1)
 ORDER BY subtitle."startTime";
 `;
 const FTS_RAW_SQL = `
-${SQL_FILTERS},
+${SQL_FILTERS()},
 ${SQL_VIDEO_TAGS}
 SELECT ts_headline(
 'english',
@@ -71,8 +71,8 @@ AND video.id IN (SELECT video_id FROM FilteredVideosWithMeta)
 ORDER BY rank DESC
 LIMIT $2
 OFFSET $8;`;
-const TEXT_SEARCH_RAW_SQL = `
-${SQL_FILTERS},
+const TEXT_SEARCH_RAW_SQL = (isAscending) => `
+${SQL_FILTERS(isAscending)},
 RankedSubtitles AS (
     SELECT subtitle.text, subtitle."startTime", video.url, video.title, video.id AS video_id, video.date, video.updated_at as video_updated_at,
         ROW_NUMBER() OVER (PARTITION BY video.id ORDER BY subtitle."startTime" ASC) AS row_num
@@ -85,7 +85,7 @@ LimitedVideos AS (
     SELECT video.id
     FROM video
     WHERE id IN (SELECT DISTINCT video_id FROM RankedSubtitles)
-    ORDER BY video.date DESC, video.updated_at DESC, video.id
+    ORDER BY video.date ${isAscending ? 'ASC' : 'DESC'}, video.updated_at ${isAscending ? 'ASC' : 'DESC'}, video.id
     LIMIT $8
 ),
 TotalCount AS (
@@ -100,10 +100,10 @@ JOIN LimitedVideos lv ON s.video_id = lv.id
 JOIN TotalCount tc ON lv.id = tc.video_id
 LEFT JOIN VideoTags vt ON lv.id = vt.video_id
 WHERE s.row_num <= $2
-ORDER BY s.date DESC, s.video_updated_at DESC, s.video_id, s."startTime";
+ORDER BY s.date ${isAscending ? 'ASC' : 'DESC'}, s.video_updated_at ${isAscending ? 'ASC' : 'DESC'}, s.video_id, s."startTime";
 `;
-const VIDEO_SEARCH_RAW_SQL = `
-${SQL_FILTERS},
+const VIDEO_SEARCH_RAW_SQL = (isAscending) => `
+${SQL_FILTERS(isAscending)},
 ${SQL_VIDEO_TAGS}
 SELECT v.url, v.title, v.id, v.date, vt.tags
 FROM video v
@@ -112,7 +112,7 @@ LEFT JOIN VideoTags vt ON v.id = vt.video_id
 WHERE true -- unused params
     OR $1::text IS NULL
     OR $8::int IS NULL
-ORDER BY v.date DESC, v.updated_at DESC, v.id
+ORDER BY v.date ${isAscending ? 'ASC' : 'DESC'}, v.updated_at ${isAscending ? 'ASC' : 'DESC'}, v.id
 LIMIT $2;
 `;
 const sanitizeInput = async (params) => {
@@ -173,9 +173,9 @@ const getFTSSearchResults = async (params) => {
 };
 const getTextSearchResults = async (params) => {
     const { processRawResult } = require('./utils');
-    const {text, title, startDate, endDate, includeTags, excludeTags, lastUrl, fetchSize} = params;
+    const {text, title, startDate, endDate, includeTags, excludeTags, lastUrl, fetchSize, isAscending} = params;
     const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
-    const rawResult = await sails.sendNativeQuery(TEXT_SEARCH_RAW_SQL, [
+    const rawResult = await sails.sendNativeQuery(TEXT_SEARCH_RAW_SQL(isAscending), [
         `%${text}%`, // $1
         fetchSize, // $2
         (title ? `%${title}%` : null), // $3
@@ -192,9 +192,9 @@ const getTextSearchResults = async (params) => {
 };
 const getVideoSearchResults = async (params) => {
     const { processRawResult } = require('./utils');
-    const {title, startDate, endDate, includeTags, excludeTags, lastUrl, fetchSize} = params;
+    const {title, startDate, endDate, includeTags, excludeTags, lastUrl, fetchSize, isAscending} = params;
     const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
-    const rawResult = await sails.sendNativeQuery(VIDEO_SEARCH_RAW_SQL, [
+    const rawResult = await sails.sendNativeQuery(VIDEO_SEARCH_RAW_SQL(isAscending), [
         null, // $1
         fetchSize, // $2
         (title ? `%${title}%` : null), // $3

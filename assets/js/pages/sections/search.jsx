@@ -30,6 +30,7 @@ export default function Search(props) {
                 text: props.searchParams?.text,
                 isFullTextSearch: props.searchParams?.isFullTextSearch,
                 title: props.searchParams?.title,
+                isAscending: props.searchParams?.isAscending,
                 startDate: props.searchParams?.startDate,
                 endDate: props.searchParams?.endDate,
                 includeTags: props.searchParams?.includeTags,

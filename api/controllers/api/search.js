@@ -11,6 +11,9 @@ module.exports = {
         title: {
             type: 'string'
         },
+        isAscending: {
+            type: 'boolean'
+        },
         startDate: {
             type: 'string'
         },
