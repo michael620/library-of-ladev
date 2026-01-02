@@ -22,7 +22,14 @@ const processTSVLine = (data, id, subtitles, speakers) => {
     }
 };
 
-const onCloseTSV = async (fd, subtitles, speakers, resolve) => {
+const onCloseTSV = async (subtitles, url, resolve) => {
+    const sql = `
+    DELETE FROM subtitle
+    WHERE owner = (
+        SELECT id FROM video WHERE url = '${url}'
+    );
+    `;
+    await sails.sendNativeQuery(sql);
     if (subtitles.length !== 0) {
         //split subtitles into chunks of 1000
         const chunks = [];
@@ -85,7 +92,7 @@ const createSubtitle = async (fd, url) => {
         const speakers = new Set();
         createInterface({input: createReadStream(fd)})
         .on('line', (data) => processTSVLine(data, video.id, subtitles, speakers))
-        .on('close', () => onCloseTSV(fd, subtitles, speakers, resolve));
+        .on('close', () => onCloseTSV(subtitles, url, resolve));
     });
 };
 
