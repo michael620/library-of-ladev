@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
@@ -10,16 +10,11 @@ import LinkIcon from '@mui/icons-material/Link';
 import ArticleIcon from '@mui/icons-material/Article';
 
 const SubtitleListItem = memo(function SubtitleListItem(props) {
-    const { index, video, currentTime, handleClickSubtitle, handleClickCopy, setCurrentSubtitle, handleClickMobileSubtitleOption } = props;
+    const { index, video, activeIndex, handleClickSubtitle, handleClickCopy, handleClickMobileSubtitleOption } = props;
     if (!video) return null;
     const { url, subtitles } = video;
     const { startTime, timestamp, text } = subtitles[index];
-    const isActive = currentTime === null ? false : currentTime >= startTime && currentTime < (subtitles[index+1] ? subtitles[index+1].startTime : Infinity);
-    useEffect(() => {
-        if (isActive) {
-            setCurrentSubtitle(index);
-        }
-    }, [isActive, index]);
+    const isActive = index === activeIndex;
     const baseStyles = {
         display: 'flex',
         alignItems: 'center',

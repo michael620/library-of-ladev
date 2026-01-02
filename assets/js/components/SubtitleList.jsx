@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import LinearProgress from '@mui/material/LinearProgress';
 import { List as FixedSizeList } from 'react-window';
@@ -16,12 +16,23 @@ const SubtitleList = memo(function SubtitleList(props) {
         isLoadingSubtitle,
         hostEl,
         rowHeight,
-        setCurrentSubtitle,
         onFetchMoreSubtitles,
         handleClickMobileSubtitleOption
     } = props;
     if (!hostEl || !video) return null;
     const { url } = video;
+    const activeIndex = useMemo(() => {
+        if (currentTime === null || !video.subtitles) return -1;
+        return video.subtitles.findIndex((s, i) => {
+            const next = video.subtitles[i + 1];
+            return currentTime >= s.startTime && currentTime < (next ? next.startTime : Infinity);
+        });
+    }, [currentTime, video.subtitles]);
+    useEffect(() => {
+        if (activeIndex >= 0 && subtitleContainerRef.current) {
+            subtitleContainerRef.current.scrollToRow({align: 'start', index: activeIndex})
+        }
+    }, [activeIndex]);
     return createPortal(
         <>
         {video.subtitles ? <FixedSizeList
@@ -34,8 +45,7 @@ const SubtitleList = memo(function SubtitleList(props) {
                 video,
                 handleClickSubtitle,
                 handleClickCopy,
-                setCurrentSubtitle,
-                currentTime,
+                activeIndex,
                 handleClickMobileSubtitleOption
             }}
         /> : video.matches ? <FixedSizeList

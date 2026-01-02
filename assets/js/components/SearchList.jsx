@@ -48,7 +48,6 @@ export default function SearchList(props) {
     const [isLoadingDownloadText, setIsLoadingDownloadText] = useState(false);
     const [hostEl, setHostEl] = useState(null);
     const [currentVideo, setCurrentVideo] = useState(null);
-    const [currentSubtitle, setCurrentSubtitle] = useState(null);
     const [popperSubtitle, setPopperSubtitle] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -123,19 +122,13 @@ export default function SearchList(props) {
         if (syncSubtitles && player.current) {
             interval = setInterval(() => {
                 const currentTime = player.current.getCurrentTime();
-                setCurrentTime(Math.round(currentTime));
+                setCurrentTime(Math.floor(currentTime));
             }, 1000);
         } else {
             setCurrentTime(null);
         }
         return () => clearInterval(interval);
     }, [syncSubtitles, player.current]);
-
-    useEffect(() => {
-        if (currentSubtitle !== null && subtitleContainerRef.current) {
-            subtitleContainerRef.current.scrollToRow({align: 'start', index: currentSubtitle})
-        }
-    }, [currentSubtitle]);
 
     useEffect(() => {
         if (player.current) {
@@ -313,7 +306,6 @@ export default function SearchList(props) {
                 handleClickSubtitle,
                 handleClickCopy,
                 currentTime,
-                setCurrentSubtitle,
                 onFetchMoreSubtitles: props.onFetchMoreSubtitles,
                 i: currentVideo?.i,
                 isLoadingSubtitle,
