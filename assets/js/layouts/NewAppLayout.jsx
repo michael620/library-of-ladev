@@ -10,7 +10,13 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import AppBar from '@mui/material/AppBar';
 import HomeIcon from '@mui/icons-material/Home';
+import MenuIcon from '@mui/icons-material/Menu';
 import IconButton from '@mui/material/IconButton';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
 import { Link as InertiaLink, router } from '@inertiajs/react'
 import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
@@ -30,6 +36,7 @@ export default function NewAppLayout({ children }) {
     );
     const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
     const [tabValue, setTabValue] = useState(0);
+    const [navOpen, setNavOpen] = useState(false);
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
     };
@@ -44,6 +51,45 @@ export default function NewAppLayout({ children }) {
         e.preventDefault();
         router.visit('/');
     };
+
+    const navItems = [
+        { label: 'Home', href: '/' },
+        { label: 'Search', href: '/search' },
+        { label: 'Bookmarks', href: '/bookmarks' },
+        { label: 'API', href: '/docs' },
+        { label: 'About', onClick: () => setAboutDialogOpen(true) }
+    ];
+
+    const handleNavClick = (item) => {
+        setNavOpen(false);
+        if (item.onClick) item.onClick();
+    };
+
+    const navDrawer = (
+        <Drawer anchor="left" open={navOpen} onClose={() => setNavOpen(false)}>
+            <Box sx={{ width: 240 }} role="presentation">
+                <List>
+                    {navItems.map((item) => (
+                        <ListItem key={item.label} disablePadding>
+                            {item.href ? (
+                                <ListItemButton
+                                    component={InertiaLink}
+                                    href={item.href}
+                                    onClick={() => handleNavClick(item)}
+                                >
+                                    <ListItemText primary={item.label} />
+                                </ListItemButton>
+                            ) : (
+                                <ListItemButton onClick={() => handleNavClick(item)}>
+                                    <ListItemText primary={item.label} />
+                                </ListItemButton>
+                            )}
+                        </ListItem>
+                    ))}
+                </List>
+            </Box>
+        </Drawer>
+    );
 
     const aboutDialogComponent = (
     <Dialog
@@ -125,6 +171,9 @@ export default function NewAppLayout({ children }) {
         </Link>
         <AppBar position="fixed">
             <Toolbar>
+            <IconButton onClick={() => setNavOpen(true)} aria-label='Open navigation menu' edge="start">
+                <MenuIcon />
+            </IconButton>
             <IconButton onClick={onClickHome} aria-label='Home'>
                 <HomeIcon />
             </IconButton>
@@ -133,6 +182,7 @@ export default function NewAppLayout({ children }) {
             </Typography>
             </Toolbar>
         </AppBar>
+        {navDrawer}
         <Box flex='1'>
             <Offset />
             <Box
