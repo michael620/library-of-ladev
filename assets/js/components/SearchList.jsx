@@ -1,43 +1,16 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
 import ListSubheader from '@mui/material/ListSubheader';
 import List from '@mui/material/List';
-import DownloadIcon from '@mui/icons-material/Download';
-import BrowserUpdatedIcon from '@mui/icons-material/BrowserUpdated';
-import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import LinearProgress from '@mui/material/LinearProgress';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
-import LinkIcon from '@mui/icons-material/Link';
-import ArticleIcon from '@mui/icons-material/Article';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import Popper from '@mui/material/Popper';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Accordion from '@mui/material/Accordion';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
-import TextField from '@mui/material/TextField';
-import CheckIcon from '@mui/icons-material/Check';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
 import SubtitleList from './SubtitleList';
 import VideoListItem from './VideoListItem';
-import { MAX_COLLECTION_NAME_LENGTH } from '@/utils/bookmarks';
+import VideoExportPopper from './VideoExportPopper';
+import MobileOptionsPopper from './MobileOptionsPopper';
+import BookmarkPickerMenu from './BookmarkPickerMenu';
 
 export default function SearchList(props) {
     const { isLoading, isLoadingSubtitle, showTags, syncSubtitles, showMatchPreviews } = props;
@@ -48,21 +21,12 @@ export default function SearchList(props) {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [currentTime, setCurrentTime] = useState(null);
     const [videoOptionsAnchorEl, setVideoOptionsAnchorEl] = useState(null);
-    const isVideoOptionsOpen = Boolean(videoOptionsAnchorEl);
     const [mobileOptionsAnchorEl, setMobileOptionsAnchorEl] = useState(null);
-    const isMobileOptionsOpen = Boolean(mobileOptionsAnchorEl);
-    const [videoOptionsStartTime, setVideoOptionsStartTime] = useState(timeStrToDayJs('00:00:00'));
-    const [videoOptionsEndTime, setVideoOptionsEndTime] = useState(timeStrToDayJs('00:00:00'));
-    const [videoOptionsIncludeTimestamp, setVideoOptionsIncludeTimestamp] = useState(false);
-    const [maxTime, setMaxTime] = useState(null);
-    const [isLoadingDownloadText, setIsLoadingDownloadText] = useState(false);
     const [hostEl, setHostEl] = useState(null);
     const [currentVideo, setCurrentVideo] = useState(null);
     const [popperSubtitle, setPopperSubtitle] = useState(null);
     const [bookmarkPickerAnchorEl, setBookmarkPickerAnchorEl] = useState(null);
     const [bookmarkPickerSubtitle, setBookmarkPickerSubtitle] = useState(null);
-    const [newCollectionMode, setNewCollectionMode] = useState(false);
-    const [newCollectionName, setNewCollectionName] = useState('');
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -101,87 +65,53 @@ export default function SearchList(props) {
         player.current.seekTo(startTime);
     }, [player]);
 
-    const showSnackbar = (message) => {
+    const showSnackbar = useCallback((message) => {
         setSnackbarMessage(message);
         setSnackbarOpen(true);
-    }
+    }, []);
 
     const handleClickCopy = useCallback((event, text) => {
         event.stopPropagation();
         navigator.clipboard.writeText(text);
         showSnackbar('Copied!')
-    }, []);
+    }, [showSnackbar]);
 
     const toggleVideoOptions = useCallback((event) => {
         setVideoOptionsAnchorEl(videoOptionsAnchorEl ? null : event.currentTarget);
     }, [videoOptionsAnchorEl]);
 
-    const handleLoadAllSubtitles = async (url, i) => {
-        await props.fetchSubtitles(i, url, true);
-    }
-
-    const handleExportTranscript = async (videoUrl) => {
-        try {
-            setIsLoadingDownloadText(true);
-            const res = await fetch(`/api/export-transcript?url=${videoUrl}&start=${dayJsToSeconds(videoOptionsStartTime)}&end=${dayJsToSeconds(videoOptionsEndTime)}&includeTimestamp=${videoOptionsIncludeTimestamp}`, {
-                method: 'GET',
-            });
-            if (!res.ok) throw new Error('Failed to download file');
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${videoUrl}-${videoOptionsStartTime.format('HH:mm:ss')}-${videoOptionsEndTime.format('HH:mm:ss')}.txt`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        } catch (err) {
-            console.error(err);
-            showSnackbar('Failed to download file.');
-        } finally {
-            setIsLoadingDownloadText(false);
-        }
-    };
-
     const handleBookmarkToggle = useCallback((subtitleData) => {
         if (!onBookmarkToggle) return;
         const result = onBookmarkToggle(subtitleData);
         if (result && result.message) showSnackbar(result.message);
-    }, [onBookmarkToggle]);
+    }, [onBookmarkToggle, showSnackbar]);
 
     const handleOpenBookmarkPicker = useCallback((anchorEl, subtitleData) => {
         setBookmarkPickerAnchorEl(anchorEl);
         setBookmarkPickerSubtitle(subtitleData);
-        setNewCollectionMode(false);
-        setNewCollectionName('');
         if (onOpenBookmarkPicker) onOpenBookmarkPicker(subtitleData);
     }, [onOpenBookmarkPicker]);
 
-    const handleCloseBookmarkPicker = () => {
+    const handleCloseBookmarkPicker = useCallback(() => {
         setBookmarkPickerAnchorEl(null);
         setBookmarkPickerSubtitle(null);
-        setNewCollectionMode(false);
-        setNewCollectionName('');
-    };
+    }, []);
 
-    const handlePickCollection = (collection) => {
-        if (!onPickCollection || !bookmarkPickerSubtitle) return;
-        const result = onPickCollection(collection, bookmarkPickerSubtitle);
+    const handlePickCollection = useCallback((collection, subtitleData) => {
+        if (!onPickCollection || !subtitleData) return;
+        const result = onPickCollection(collection, subtitleData);
         if (result && result.message) showSnackbar(result.message);
-        handleCloseBookmarkPicker();
-    };
+    }, [onPickCollection, showSnackbar]);
 
-    const handleCreateCollectionSubmit = () => {
-        if (!onCreateCollection || !bookmarkPickerSubtitle) return;
-        const trimmed = newCollectionName.trim();
-        if (!trimmed) return;
+    const handleCreateCollection = useCallback((name, subtitleData) => {
+        if (!onCreateCollection || !subtitleData) return;
         try {
-            const result = onCreateCollection(trimmed, bookmarkPickerSubtitle);
+            const result = onCreateCollection(name, subtitleData);
             if (result && result.message) showSnackbar(result.message);
-            handleCloseBookmarkPicker();
         } catch (err) {
             showSnackbar(err instanceof Error ? err.message : String(err));
         }
-    };
+    }, [onCreateCollection, showSnackbar]);
 
     useEffect(() => {
         let interval;
@@ -196,17 +126,9 @@ export default function SearchList(props) {
         return () => clearInterval(interval);
     }, [syncSubtitles, player.current]);
 
-    useEffect(() => {
-        if (player.current) {
-            const newMaxTime = timeStrToDayJs(formatSeconds(player.current.getDuration()));
-            setVideoOptionsEndTime(newMaxTime);
-            setMaxTime(newMaxTime);
-        }
-    }, [player.current]);
-
-    const _onReady = (event) => {
+    const _onReady = useCallback((event) => {
         player.current = event.target;
-    }
+    }, []);
 
     let searchResultText;
     if (props.bookmarksMode) {
@@ -241,191 +163,6 @@ export default function SearchList(props) {
         if (!liveCurrentVideo || !bookmarkedIdsByVideoUrl) return new Set();
         return bookmarkedIdsByVideoUrl.get(liveCurrentVideo.video.url) || new Set();
     }, [liveCurrentVideo, bookmarkedIdsByVideoUrl]);
-
-    const VideoOptionsPopper = liveCurrentVideo ? (
-        <Popper id={isVideoOptionsOpen ? 'video-options-popper' : undefined} open={isVideoOptionsOpen} anchorEl={videoOptionsAnchorEl} placement='top-start'>
-            <Card>
-            <CardContent>
-            <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
-                <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                    <Button
-                        loading={isLoadingSubtitle}
-                        disabled={!!liveCurrentVideo.video.matches || liveCurrentVideo.video.allSubtitlesFetched || props.bookmarksMode}
-                        startIcon={<BrowserUpdatedIcon />}
-                        onClick={() => handleLoadAllSubtitles(liveCurrentVideo.video.url, liveCurrentVideo.i)}
-                    >
-                    Load all subtitles
-                    </Button>
-                </Box>
-                <Box display='flex' flexDirection='column' justifyContent='start'>
-                <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                    <Button
-                        loading={isLoadingDownloadText}
-                        disabled={isLoadingDownloadText}
-                        startIcon={<DownloadIcon />}
-                        onClick={() => handleExportTranscript(liveCurrentVideo.video.url)}
-                    >
-                        Download as text
-                    </Button>
-                </Box>
-                <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                    <Accordion>
-                        <AccordionSummary
-                        expandIcon={<ArrowDropDownIcon />}
-                        aria-controls="export-transcript-advanced-options"
-                        >
-                        <Typography component="span">Advanced options</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}} flexWrap={{ xs: 'wrap', sm: 'nowrap' }}>
-                                <TimePicker
-                                    label='Start Time'
-                                    views={['hours', 'minutes', 'seconds']}
-                                    format='HH:mm:ss'
-                                    skipDisabled={true}
-                                    maxTime={maxTime}
-                                    ampm={false}
-                                    viewRenderers={{
-                                        hours: renderMultiSectionDigitalClockTimeView,
-                                        minutes: renderMultiSectionDigitalClockTimeView,
-                                        seconds: renderMultiSectionDigitalClockTimeView,
-                                    }}
-                                    timeSteps={{ hours: 1, minutes: 1, seconds: 1 }}
-                                    value={videoOptionsStartTime}
-                                    onChange={(newValue) => setVideoOptionsStartTime(newValue)}
-                                />
-                                <HorizontalRuleIcon sx={{ display: { xs: 'none', 'sm': 'unset' }}}/>
-                                <TimePicker
-                                    label='End Time'
-                                    views={['hours', 'minutes', 'seconds']}
-                                    format='HH:mm:ss'
-                                    skipDisabled={true}
-                                    maxTime={maxTime}
-                                    ampm={false}
-                                    viewRenderers={{
-                                        hours: renderMultiSectionDigitalClockTimeView,
-                                        minutes: renderMultiSectionDigitalClockTimeView,
-                                        seconds: renderMultiSectionDigitalClockTimeView,
-                                    }}
-                                    timeSteps={{ hours: 1, minutes: 1, seconds: 1 }}
-                                    value={videoOptionsEndTime}
-                                    onChange={(newValue) => setVideoOptionsEndTime(newValue)}
-                                />
-                            </Box>
-                            <Box>
-                                <FormControlLabel
-                                    control={<Switch/>}
-                                    checked={videoOptionsIncludeTimestamp}
-                                    label={'Include timestamp'}
-                                    onChange={(event) => setVideoOptionsIncludeTimestamp(event.target.checked)}
-                                />
-                            </Box>
-                        </AccordionDetails>
-                    </Accordion>
-                </Box>
-                </Box>
-            </Box>
-            </CardContent>
-            </Card>
-        </Popper>
-    ) : '';
-
-    const popperBookmarked = popperSubtitle && bookmarkedIdsByVideoUrl
-        ? (bookmarkedIdsByVideoUrl.get(popperSubtitle.videoUrl) || new Set()).has(String(popperSubtitle.subtitleId))
-        : false;
-
-    const MobileOptionsPopper = (
-        <Popper id={isMobileOptionsOpen ? 'subtitle-options-popper' : undefined} open={isMobileOptionsOpen} anchorEl={mobileOptionsAnchorEl} placement='bottom-end'>
-            <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
-                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, popperSubtitle?.text)}>
-                    <ArticleIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${popperSubtitle?.videoUrl}&t=${popperSubtitle?.startTime}s`)}>
-                    <LinkIcon />
-                </IconButton>
-                {(onBookmarkToggle || onOpenBookmarkPicker || onPickCollection) && popperSubtitle ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {onBookmarkToggle ? (
-                            <IconButton
-                                edge="end"
-                                aria-label={popperBookmarked ? 'remove-bookmark' : 'add-bookmark'}
-                                title={popperBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                                onClick={(e) => { e.stopPropagation(); handleBookmarkToggle(popperSubtitle); }}
-                            >
-                                {popperBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
-                            </IconButton>
-                        ) : null}
-                        {onOpenBookmarkPicker || onPickCollection ? (
-                            <IconButton
-                                size="small"
-                                aria-label="bookmark-picker"
-                                title='Save to collection...'
-                                onClick={(e) => { e.stopPropagation(); handleOpenBookmarkPicker(e.currentTarget, popperSubtitle); }}
-                                sx={{ p: 0.25 }}
-                            >
-                                <ArrowDropDownIcon fontSize="small" />
-                            </IconButton>
-                        ) : null}
-                    </Box>
-                ) : null}
-            </Box>
-        </Popper>
-    );
-
-    const currentItemId = bookmarkPickerSubtitle ? String(bookmarkPickerSubtitle.subtitleId) : null;
-    const currentItemCollectionIds = currentItemId && bookmarkedCollectionIdsByItemId
-        ? bookmarkedCollectionIdsByItemId.get(currentItemId) || new Set()
-        : new Set();
-
-    const BookmarkPickerMenu = (
-        <Menu
-            anchorEl={bookmarkPickerAnchorEl}
-            open={Boolean(bookmarkPickerAnchorEl)}
-            onClose={handleCloseBookmarkPicker}
-        >
-            {(collections || []).map((c) => {
-                const checked = currentItemCollectionIds.has(c.id);
-                return (
-                    <MenuItem key={c.id} onClick={() => handlePickCollection(c)}>
-                        <ListItemIcon>{checked ? <CheckIcon fontSize="small" /> : <Box sx={{ width: 20 }} />}</ListItemIcon>
-                        <ListItemText>{c.name}</ListItemText>
-                    </MenuItem>
-                );
-            })}
-            {(collections || []).length > 0 ? <Divider /> : null}
-            {newCollectionMode ? (
-                <MenuItem
-                    disableRipple
-                    onKeyDown={(e) => e.stopPropagation()}
-                    sx={{ display: 'flex', gap: 1 }}
-                >
-                    <TextField
-                        size="small"
-                        autoFocus
-                        placeholder="Collection name"
-                        value={newCollectionName}
-                        onChange={(e) => setNewCollectionName(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleCreateCollectionSubmit();
-                            } else if (e.key === 'Escape') {
-                                e.preventDefault();
-                                setNewCollectionMode(false);
-                            }
-                        }}
-                        slotProps={{ htmlInput: { maxLength: MAX_COLLECTION_NAME_LENGTH } }}
-                    />
-                    <Button size="small" disabled={!newCollectionName.trim()} onClick={handleCreateCollectionSubmit}>Save</Button>
-                </MenuItem>
-            ) : (
-                <MenuItem onClick={() => setNewCollectionMode(true)}>
-                    <ListItemIcon><Box sx={{ width: 20 }} /></ListItemIcon>
-                    <ListItemText>New collection…</ListItemText>
-                </MenuItem>
-            )}
-        </Menu>
-    );
 
     return (
         props.searchResult ? <>
@@ -473,9 +210,33 @@ export default function SearchList(props) {
             autoHideDuration={3000}
             message={snackbarMessage}
         />
-        {VideoOptionsPopper}
-        {MobileOptionsPopper}
-        {BookmarkPickerMenu}
+        <VideoExportPopper
+            anchorEl={videoOptionsAnchorEl}
+            liveCurrentVideo={liveCurrentVideo}
+            player={player}
+            bookmarksMode={props.bookmarksMode}
+            isLoadingSubtitle={isLoadingSubtitle}
+            fetchSubtitles={props.fetchSubtitles}
+            onError={showSnackbar}
+        />
+        <MobileOptionsPopper
+            anchorEl={mobileOptionsAnchorEl}
+            subtitle={popperSubtitle}
+            bookmarkedIdsByVideoUrl={bookmarkedIdsByVideoUrl}
+            onCopy={handleClickCopy}
+            onBookmarkToggle={onBookmarkToggle ? handleBookmarkToggle : undefined}
+            onOpenBookmarkPicker={onOpenBookmarkPicker || onPickCollection ? handleOpenBookmarkPicker : undefined}
+            showBookmarkControls={!!(onBookmarkToggle || onOpenBookmarkPicker || onPickCollection)}
+        />
+        <BookmarkPickerMenu
+            anchorEl={bookmarkPickerAnchorEl}
+            subtitle={bookmarkPickerSubtitle}
+            collections={collections}
+            bookmarkedCollectionIdsByItemId={bookmarkedCollectionIdsByItemId}
+            onClose={handleCloseBookmarkPicker}
+            onPickCollection={handlePickCollection}
+            onCreateCollection={handleCreateCollection}
+        />
         <SubtitleList
             {...{
                 subtitleContainerRef,

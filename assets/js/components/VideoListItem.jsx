@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
@@ -30,11 +30,15 @@ const VideoListItem = memo(function VideoListItem(props) {
     } = props;
     const { url, title, date, total, subtitles } = video;
     const ref = useRef(null);
+    const [playerReady, setPlayerReady] = useState(false);
+    const isOpen = open === url;
     useEffect(() => {
-        if (open===url) {
+        if (isOpen) {
             setHostEl(ref.current);
+        } else {
+            setPlayerReady(false);
         }
-    }, [open, setHostEl]);
+    }, [isOpen, setHostEl]);
     let numMatches;
     if (!props.text) {
         numMatches = undefined;
@@ -66,12 +70,13 @@ const VideoListItem = memo(function VideoListItem(props) {
                     )) : '' : ''}
                 </Box>
             } />
-            {open===url ? <ExpandLess /> : <ExpandMore />}
+            {isOpen ? <ExpandLess /> : <ExpandMore />}
         </ListItemButton>
-        <Collapse in={open===url} timeout="auto" unmountOnExit onExit={onCollapseVideoListItem}>
+        <Collapse in={isOpen} timeout="auto" unmountOnExit onEntered={() => setPlayerReady(true)} onExit={onCollapseVideoListItem}>
             <Paper elevation={2}>
             <Box ref={ref}>
                 <Box>
+                    {playerReady ? (
                     <YouTube
                     videoId={url}
                     opts={{
@@ -81,6 +86,7 @@ const VideoListItem = memo(function VideoListItem(props) {
                         }
                     }}
                     onReady={_onReady}/>
+                    ) : null}
                 </Box>
                 <Box>
                     <IconButton onClick={toggleVideoOptions}>
