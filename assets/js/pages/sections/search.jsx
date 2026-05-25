@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import NewAppLayout from '@/layouts/NewAppLayout.jsx';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
@@ -7,6 +7,18 @@ import SearchBar from '@/components/SearchBar.jsx';
 import { Head, router } from '@inertiajs/react';
 import { FETCH_TYPE } from '../../../../shared/constants';
 import Alert from '@mui/material/Alert';
+import {
+    getCollections,
+    getItems,
+    getLastUsedCollectionId,
+    setLastUsedCollectionId,
+    ensureDefaultCollection,
+    isInCollection,
+    addToCollection,
+    removeFromCollection,
+    getCollectionById,
+    createCollection
+} from '@/utils/bookmarks';
 
 Search.layout = (page) => <NewAppLayout>{page}</NewAppLayout>
 export default function Search(props) {
@@ -18,8 +30,102 @@ export default function Search(props) {
     const [showTags, setShowTags] = useState(localStorage.getItem('settings-showTags') === 'true');
     const [syncSubtitles, setSyncSubtitles] = useState(localStorage.getItem('settings-syncSubtitles') === 'true');
     const [showMatchPreviews, setShowMatchPreviews] = useState(localStorage.getItem('settings-showMatchPreviews') === 'true');
+    const [collections, setCollections] = useState([]);
+    const [lastUsedId, setLastUsedId] = useState(null);
+    const [items, setItems] = useState({});
     const observer = useRef(null);
     const observerSubtitle = useRef(null);
+
+    useEffect(() => {
+        const id = ensureDefaultCollection();
+        setCollections(getCollections());
+        setLastUsedId(id);
+        setItems(getItems());
+    }, []);
+
+    const refreshBookmarkState = useCallback(() => {
+        setCollections(getCollections());
+        setLastUsedId(getLastUsedCollectionId());
+        setItems(getItems());
+    }, []);
+
+    const lastUsedCollection = useMemo(() => collections.find(c => c.id === lastUsedId), [collections, lastUsedId]);
+    const lastUsedCollectionName = lastUsedCollection?.name;
+
+    const bookmarkedIdsByVideoUrl = useMemo(() => {
+        const map = new Map();
+        if (!lastUsedCollection) return map;
+        for (const itemId of lastUsedCollection.bookmarkIds) {
+            const item = items[itemId];
+            if (!item) continue;
+            const set = map.get(item.videoUrl) || new Set();
+            set.add(itemId);
+            map.set(item.videoUrl, set);
+        }
+        return map;
+    }, [lastUsedCollection, items]);
+
+    const bookmarkedCollectionIdsByItemId = useMemo(() => {
+        const map = new Map();
+        for (const c of collections) {
+            for (const id of c.bookmarkIds) {
+                const set = map.get(id) || new Set();
+                set.add(c.id);
+                map.set(id, set);
+            }
+        }
+        return map;
+    }, [collections]);
+
+    const handleBookmarkToggle = useCallback((subtitleData) => {
+        const id = ensureDefaultCollection();
+        const itemId = String(subtitleData.subtitleId);
+        const target = getCollectionById(id);
+        const targetName = target?.name || 'My Bookmarks';
+        if (isInCollection(id, itemId)) {
+            removeFromCollection(id, itemId);
+            refreshBookmarkState();
+            return { message: `Removed from ${targetName}` };
+        }
+        addToCollection(id, {
+            subtitleId: subtitleData.subtitleId,
+            videoUrl: subtitleData.videoUrl,
+            startTime: subtitleData.startTime
+        });
+        refreshBookmarkState();
+        return { message: `Saved to ${targetName}` };
+    }, [refreshBookmarkState]);
+
+    const handlePickCollection = useCallback((collection, subtitleData) => {
+        const itemId = String(subtitleData.subtitleId);
+        if (isInCollection(collection.id, itemId)) {
+            removeFromCollection(collection.id, itemId);
+            setLastUsedCollectionId(collection.id);
+            refreshBookmarkState();
+            return { message: `Removed from ${collection.name}` };
+        }
+        addToCollection(collection.id, {
+            subtitleId: subtitleData.subtitleId,
+            videoUrl: subtitleData.videoUrl,
+            startTime: subtitleData.startTime
+        });
+        setLastUsedCollectionId(collection.id);
+        refreshBookmarkState();
+        return { message: `Saved to ${collection.name}` };
+    }, [refreshBookmarkState]);
+
+    const handleCreateCollection = useCallback((name, subtitleData) => {
+        const collection = createCollection(name);
+        addToCollection(collection.id, {
+            subtitleId: subtitleData.subtitleId,
+            videoUrl: subtitleData.videoUrl,
+            startTime: subtitleData.startTime
+        });
+        setLastUsedCollectionId(collection.id);
+        refreshBookmarkState();
+        return { message: `Saved to ${collection.name}` };
+    }, [refreshBookmarkState]);
+
 
     const fetchMoreResults = async () => {
         if (noMoreResultsToFetch || isLoading) return;
@@ -167,6 +273,13 @@ export default function Search(props) {
             isLoadingSubtitle={isLoadingSubtitle}
             syncSubtitles={syncSubtitles}
             tags={props.tags}
+            collections={collections}
+            lastUsedCollectionName={lastUsedCollectionName}
+            bookmarkedIdsByVideoUrl={bookmarkedIdsByVideoUrl}
+            bookmarkedCollectionIdsByItemId={bookmarkedCollectionIdsByItemId}
+            onBookmarkToggle={handleBookmarkToggle}
+            onPickCollection={handlePickCollection}
+            onCreateCollection={handleCreateCollection}
         />
     </Paper>
     </Box>

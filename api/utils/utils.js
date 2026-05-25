@@ -175,6 +175,7 @@ const processRawResult = (rawResult) => {
             entry.total = entry.total || row.total_count;
             entry.subtitles = entry.subtitles || [];
             entry.subtitles.push({
+                subtitleId: row.subtitleId,
                 startTime: row.startTime,
                 timestamp: formatSeconds(row.startTime),
                 text: row.text
@@ -210,6 +211,7 @@ const processRawResultFTS = (rawResult) => {
 const processRawResultSubtitle = (rawResult) => {
     const { formatSeconds } = require('../../shared/constants');
     const results = rawResult.rows.map(row => ({
+        subtitleId: row.subtitleId,
         startTime: row.startTime,
         timestamp: formatSeconds(row.startTime),
         text: row.text

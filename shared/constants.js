@@ -44,6 +44,8 @@ const dayJsToSeconds = (time) => {
 
 module.exports = {
     FETCH_SIZE: 25,
+    MAX_BOOKMARKS: 10000,
+    MAX_BOOKMARK_FALLBACK_PAIRS: 1000,
     FETCH_TYPE,
     TAG_TYPES,
     formatSeconds,

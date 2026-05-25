@@ -17,22 +17,26 @@ const SubtitleList = memo(function SubtitleList(props) {
         hostEl,
         rowHeight,
         onFetchMoreSubtitles,
-        handleClickMobileSubtitleOption
+        handleClickMobileSubtitleOption,
+        bookmarkedIds,
+        onBookmarkToggle,
+        onOpenBookmarkPicker,
+        lastUsedCollectionName
     } = props;
-    if (!hostEl || !video) return null;
-    const { url } = video;
+    const url = video?.url;
     const activeIndex = useMemo(() => {
-        if (currentTime === null || !video.subtitles) return -1;
+        if (currentTime === null || !video?.subtitles) return -1;
         return video.subtitles.findIndex((s, i) => {
             const next = video.subtitles[i + 1];
             return currentTime >= s.startTime && currentTime < (next ? next.startTime : Infinity);
         });
-    }, [currentTime, video.subtitles]);
+    }, [currentTime, video?.subtitles]);
     useEffect(() => {
         if (activeIndex >= 0 && subtitleContainerRef.current) {
             subtitleContainerRef.current.scrollToRow({align: 'start', index: activeIndex})
         }
     }, [activeIndex]);
+    if (!hostEl || !video) return null;
     return createPortal(
         <>
         {video.subtitles ? <FixedSizeList
@@ -46,7 +50,11 @@ const SubtitleList = memo(function SubtitleList(props) {
                 handleClickSubtitle,
                 handleClickCopy,
                 activeIndex,
-                handleClickMobileSubtitleOption
+                handleClickMobileSubtitleOption,
+                bookmarkedIds,
+                onBookmarkToggle,
+                onOpenBookmarkPicker,
+                lastUsedCollectionName
             }}
         /> : video.matches ? <FixedSizeList
             style={{ maxHeight: '50vh', overflowY: 'auto' }}

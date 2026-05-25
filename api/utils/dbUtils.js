@@ -45,7 +45,7 @@ VideoTags AS (
 )
 `;
 const SUBTITLE_SEARCH_RAW_SQL = `
-SELECT subtitle.text, subtitle."startTime"
+SELECT subtitle.id AS "subtitleId", subtitle.text, subtitle."startTime"
 FROM subtitle
 JOIN video ON subtitle.owner = video.id
 WHERE video.url = $2
@@ -74,7 +74,7 @@ OFFSET $8;`;
 const TEXT_SEARCH_RAW_SQL = (isAscending) => `
 ${SQL_FILTERS(isAscending)},
 RankedSubtitles AS (
-    SELECT subtitle.text, subtitle."startTime", video.url, video.title, video.id AS video_id, video.date, video.updated_at as video_updated_at,
+    SELECT subtitle.id AS "subtitleId", subtitle.text, subtitle."startTime", video.url, video.title, video.id AS video_id, video.date, video.updated_at as video_updated_at,
         ROW_NUMBER() OVER (PARTITION BY video.id ORDER BY subtitle."startTime" ASC) AS row_num
     FROM subtitle
     JOIN video ON subtitle.owner = video.id
@@ -94,7 +94,7 @@ TotalCount AS (
     GROUP BY video_id
 ),
 ${SQL_VIDEO_TAGS}
-SELECT s.text, s.url, s."startTime", s.title, s.date, tc.total_count, vt.tags
+SELECT s."subtitleId", s.text, s.url, s."startTime", s.title, s.date, tc.total_count, vt.tags
 FROM RankedSubtitles s
 JOIN LimitedVideos lv ON s.video_id = lv.id
 JOIN TotalCount tc ON lv.id = tc.video_id
@@ -114,6 +114,29 @@ WHERE true -- unused params
     OR $8::int IS NULL
 ORDER BY v.date ${isAscending ? 'ASC' : 'DESC'}, v.updated_at ${isAscending ? 'ASC' : 'DESC'}, v.id
 LIMIT $2;
+`;
+const BOOKMARKS_BACKUP_RAW_SQL = `
+SELECT s.id AS "subtitleId", s."startTime", s.text,
+       v.id AS video_id, v.url, v.title, v.date
+FROM subtitle s
+JOIN video v ON s.owner = v.id
+WHERE s.id = ANY($1::int[])
+`;
+const BOOKMARKS_VIDEO_TAGS_RAW_SQL = `
+SELECT tm.video_id, t.name
+FROM tagmap tm
+JOIN tag t ON tm.tag_id = t.id
+WHERE tm.video_id = ANY($1::int[])
+`;
+const BOOKMARKS_FALLBACK_RAW_SQL = `
+SELECT s.id AS "subtitleId", s."startTime", s.text,
+       v.url AS "videoUrl", v.title, v.date
+FROM subtitle s
+JOIN video v ON s.owner = v.id
+WHERE (v.url, s."startTime") IN (
+    SELECT * FROM unnest($1::text[], $2::int[])
+)
+ORDER BY v.url, s."startTime", s.id;
 `;
 const sanitizeInput = async (params) => {
     const { FETCH_SIZE } = require('../../shared/constants');
@@ -209,11 +232,40 @@ const getVideoSearchResults = async (params) => {
     ]);
     return processRawResult(rawResult);
 };
+const getBookmarkBackupMetadata = async (subtitleIds) => {
+    if (!Array.isArray(subtitleIds) || subtitleIds.length === 0) {
+        return { rowById: new Map(), tagsByVideoId: new Map() };
+    }
+    const subtitleResult = await sails.sendNativeQuery(BOOKMARKS_BACKUP_RAW_SQL, [subtitleIds]);
+    const rowById = new Map();
+    for (const row of subtitleResult.rows) {
+        rowById.set(row.subtitleId, row);
+    }
+    const videoIds = Array.from(new Set(
+        Array.from(rowById.values()).map(r => r.video_id)
+    ));
+    const tagsByVideoId = new Map();
+    if (videoIds.length) {
+        const tagResult = await sails.sendNativeQuery(BOOKMARKS_VIDEO_TAGS_RAW_SQL, [videoIds]);
+        for (const tr of tagResult.rows) {
+            const existing = tagsByVideoId.get(tr.video_id) || [];
+            existing.push(tr.name);
+            tagsByVideoId.set(tr.video_id, existing);
+        }
+    }
+    return { rowById, tagsByVideoId };
+};
+const getBookmarkFallbackCandidates = async (urls, startTimes) => {
+    const result = await sails.sendNativeQuery(BOOKMARKS_FALLBACK_RAW_SQL, [urls, startTimes]);
+    return result.rows;
+};
 module.exports = {
     sanitizeInput,
     getOneVideo,
     getSubtitleSearchResults,
     getFTSSearchResults,
     getTextSearchResults,
-    getVideoSearchResults
+    getVideoSearchResults,
+    getBookmarkBackupMetadata,
+    getBookmarkFallbackCandidates
 };
