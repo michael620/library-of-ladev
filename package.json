@@ -34,6 +34,8 @@
     "@eslint/js": "^9.39.1",
     "@rsbuild/plugin-react": "^1.0.2",
     "@types/node": "^22.5.5",
+    "@types/react": "^18.3.29",
+    "@types/react-dom": "^18.3.7",
     "create-sails-generator": "^0.0.3",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
@@ -44,13 +46,15 @@
     "sails-hook-shipwright": "^0.3.0",
     "sails.io.js": "^1.2.1",
     "socket.io-client": "^4.7.5",
-    "tailwindcss": "^3.4.12"
+    "tailwindcss": "^3.4.12",
+    "typescript": "^6.0.3"
   },
   "scripts": {
     "dev": "node --watch app.js",
     "start": "node app.js",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "test:unit": "node --test ./tests/unit/**/*.test.js",
     "test": "npm run test:unit"
   },

@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Select from '@mui/material/Select';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -23,7 +24,6 @@ import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -55,16 +55,33 @@ import {
     buildBackupView,
     validateImport
 } from '@/utils/bookmarks';
+import type {
+    Collection,
+    ItemsMap,
+    BookmarkItem,
+    BackupView
+} from '@/utils/bookmarks';
+import type { BookmarksPageProps, FallbackCandidate } from '@/types';
 
-Bookmarks.layout = (page) => <NewAppLayout>{page}</NewAppLayout>
+type ActiveBackupView = BackupView & { filename: string };
 
-export default function Bookmarks(props) {
-    const [collections, setCollections] = useState([]);
-    const [items, setItems] = useState({});
-    const [activeCollectionId, setActiveCollectionId] = useState(null);
-    const [sort, setSort] = useState('recency');
-    const [showTags, setShowTags] = useState(localStorage.getItem('settings-showTags') === 'true');
-    const [syncSubtitles, setSyncSubtitles] = useState(localStorage.getItem('settings-syncSubtitles') === 'true');
+interface SubtitleData {
+    subtitleId: number;
+    videoUrl: string;
+    startTime: number;
+    text?: string;
+    timestamp?: string;
+}
+
+Bookmarks.layout = (page: React.ReactNode) => <NewAppLayout>{page}</NewAppLayout>
+
+export default function Bookmarks(props: BookmarksPageProps) {
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [items, setItems] = useState<ItemsMap>({});
+    const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+    const [sort, setSort] = useState<BookmarksPageProps['sort']>('recency');
+    const [showTags] = useState<boolean>(localStorage.getItem('settings-showTags') === 'true');
+    const [syncSubtitles] = useState<boolean>(localStorage.getItem('settings-syncSubtitles') === 'true');
     const [showMatchPreviews] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -73,12 +90,12 @@ export default function Bookmarks(props) {
     const [createOpen, setCreateOpen] = useState(false);
     const [createValue, setCreateValue] = useState('');
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [candidates, setCandidates] = useState([]);
+    const [candidates, setCandidates] = useState<FallbackCandidate[]>([]);
     const [loadingFallback, setLoadingFallback] = useState(false);
-    const [backupView, setBackupView] = useState(null);
+    const [backupView, setBackupView] = useState<ActiveBackupView | null>(null);
     const isBackupView = !!backupView;
 
-    const showSnackbar = (message) => {
+    const showSnackbar = (message: string) => {
         setSnackbarMessage(message);
         setSnackbarOpen(true);
     };
@@ -180,13 +197,13 @@ export default function Bookmarks(props) {
         return map;
     }, [candidates]);
 
-    const handleSelectCollection = (id) => {
+    const handleSelectCollection = (id: string) => {
         setActiveCollectionId(id);
         setLastUsedCollectionId(id);
     };
 
-    const handleSortChange = (event) => {
-        setSort(event.target.value);
+    const handleSortChange = (event: SelectChangeEvent<BookmarksPageProps['sort']>) => {
+        setSort(event.target.value as BookmarksPageProps['sort']);
     };
 
     const handleCreate = () => {
@@ -276,7 +293,7 @@ export default function Bookmarks(props) {
         }
     };
 
-    const handleImport = (event) => {
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = '';
         if (!file) return;
@@ -284,16 +301,16 @@ export default function Bookmarks(props) {
         const reader = new FileReader();
         reader.onload = () => {
             try {
-                const text = reader.result;
+                const text = typeof reader.result === 'string' ? reader.result : '';
                 const parsed = JSON.parse(text);
                 if (isBackupKind(parsed)) {
-                    validateImport(parsed, typeof text === 'string' ? text.length : undefined);
+                    validateImport(parsed, text.length);
                     const view = buildBackupView(parsed);
                     setBackupView({ ...view, filename });
                     showSnackbar(`Viewing backup "${view.collection.name}"`);
                     return;
                 }
-                const c = importCollection(parsed, typeof text === 'string' ? text.length : undefined);
+                const c = importCollection(parsed, text.length);
                 refreshLocal();
                 setActiveCollectionId(c.id);
                 setLastUsedCollectionId(c.id);
@@ -334,7 +351,7 @@ export default function Bookmarks(props) {
         setBackupView(null);
     };
 
-    const handleAddCandidate = (candidate) => {
+    const handleAddCandidate = (candidate: FallbackCandidate) => {
         if (!activeCollectionId) return;
         addToCollection(activeCollectionId, {
             subtitleId: candidate.subtitleId,
@@ -346,7 +363,7 @@ export default function Bookmarks(props) {
         showSnackbar('Added to collection');
     };
 
-    const handleDiscardOriginal = (staleItem) => {
+    const handleDiscardOriginal = (staleItem: BookmarkItem) => {
         if (!activeCollectionId) return;
         removeFromCollection(activeCollectionId, String(staleItem.subtitleId));
         refreshLocal();
@@ -354,7 +371,7 @@ export default function Bookmarks(props) {
         showSnackbar('Removed from this collection');
     };
 
-    const handleBookmarkToggle = useCallback((subtitleData) => {
+    const handleBookmarkToggle = useCallback((subtitleData: SubtitleData) => {
         if (!activeCollectionId) return null;
         const itemId = String(subtitleData.subtitleId);
         const collection = getCollectionById(activeCollectionId);
@@ -374,10 +391,10 @@ export default function Bookmarks(props) {
         return { message: `Saved to ${collectionName}` };
     }, [activeCollectionId, refreshLocal, fetchBookmarks]);
 
-    const handlePickCollection = useCallback((collection, subtitleData) => {
+    const handlePickCollection = useCallback((collection: Collection, subtitleData: SubtitleData) => {
         const itemId = String(subtitleData.subtitleId);
         const allCollections = getCollections();
-        const currentMembership = new Set();
+        const currentMembership = new Set<string>();
         for (const c of allCollections) {
             if (c.bookmarkIds.includes(itemId)) currentMembership.add(c.id);
         }
@@ -396,7 +413,7 @@ export default function Bookmarks(props) {
         return { message: currentMembership.has(collection.id) ? `Saved to ${collection.name}` : `Removed from ${collection.name}` };
     }, [items, refreshLocal, fetchBookmarks]);
 
-    const handleCreateCollection = useCallback((name, subtitleData) => {
+    const handleCreateCollection = useCallback((name: string, subtitleData: SubtitleData) => {
         const created = createCollection(name);
         addToCollection(created.id, {
             subtitleId: subtitleData.subtitleId,
@@ -408,12 +425,12 @@ export default function Bookmarks(props) {
     }, [refreshLocal]);
 
     const bookmarkedIdsByVideoUrl = useMemo(() => {
-        const map = new Map();
+        const map = new Map<string, Set<string>>();
         if (!activeCollection) return map;
         for (const id of activeCollection.bookmarkIds) {
             const it = items[id];
             if (!it) continue;
-            const set = map.get(it.videoUrl) || new Set();
+            const set = map.get(it.videoUrl) || new Set<string>();
             set.add(id);
             map.set(it.videoUrl, set);
         }
@@ -421,10 +438,10 @@ export default function Bookmarks(props) {
     }, [activeCollection, items]);
 
     const bookmarkedCollectionIdsByItemId = useMemo(() => {
-        const map = new Map();
+        const map = new Map<string, Set<string>>();
         for (const c of collections) {
             for (const id of c.bookmarkIds) {
-                const set = map.get(id) || new Set();
+                const set = map.get(id) || new Set<string>();
                 set.add(c.id);
                 map.set(id, set);
             }

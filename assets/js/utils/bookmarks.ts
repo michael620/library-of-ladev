@@ -1,3 +1,70 @@
+export interface BookmarkItem {
+    id: string;
+    subtitleId: number;
+    videoUrl: string;
+    startTime: number;
+    savedAt: number;
+}
+
+export interface Collection {
+    id: string;
+    name: string;
+    bookmarkIds: string[];
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface ItemsMap {
+    [id: string]: BookmarkItem;
+}
+
+export interface BackupSnapshot {
+    text: string;
+    timestamp: string;
+    videoTitle: string;
+    videoDate: string;
+    videoTags: string[];
+}
+
+export interface BackupItem extends BookmarkItem {
+    snapshot?: BackupSnapshot;
+}
+
+export interface ImportPayload {
+    version: 1;
+    kind?: 'backup';
+    collection: {
+        id?: string;
+        name: string;
+        createdAt?: number;
+        updatedAt?: number;
+    };
+    items: BackupItem[];
+}
+
+export interface BackupViewSubtitle {
+    subtitleId: number;
+    startTime: number;
+    timestamp: string;
+    text: string;
+}
+
+export interface BackupViewVideo {
+    url: string;
+    title: string;
+    date: string;
+    tags: string[];
+    subtitles: BackupViewSubtitle[];
+    total?: number;
+}
+
+export interface BackupView {
+    collection: ImportPayload['collection'];
+    searchResult: BackupViewVideo[];
+    unresolvedCount: number;
+    itemCount: number;
+}
+
 const ITEMS_KEY = 'bookmarks-items';
 const COLLECTIONS_KEY = 'bookmarks-collections';
 const LAST_USED_KEY = 'bookmarks-lastUsedCollectionId';
@@ -7,37 +74,37 @@ const MAX_ITEMS_PER_IMPORT = 10000;
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 export const MAX_COLLECTION_NAME_LENGTH = 50;
 
-const readJson = (key, fallback) => {
+const readJson = <T>(key: string, fallback: T): T => {
     try {
         const raw = localStorage.getItem(key);
         if (!raw) return fallback;
-        return JSON.parse(raw);
+        return JSON.parse(raw) as T;
     } catch {
         return fallback;
     }
 };
 
-const writeJson = (key, value) => {
+const writeJson = (key: string, value: unknown): void => {
     localStorage.setItem(key, JSON.stringify(value));
 };
 
-const uuid = () => {
+const uuid = (): string => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
-export const makeBookmarkItemId = ({ subtitleId }) => String(subtitleId);
-export const getItems = () => readJson(ITEMS_KEY, {});
-export const getCollections = () => readJson(COLLECTIONS_KEY, []);
-export const getLastUsedCollectionId = () => localStorage.getItem(LAST_USED_KEY);
-export const setLastUsedCollectionId = (id) => localStorage.setItem(LAST_USED_KEY, id);
+export const makeBookmarkItemId = ({ subtitleId }: { subtitleId: number }): string => String(subtitleId);
+export const getItems = (): ItemsMap => readJson<ItemsMap>(ITEMS_KEY, {});
+export const getCollections = (): Collection[] => readJson<Collection[]>(COLLECTIONS_KEY, []);
+export const getLastUsedCollectionId = (): string | null => localStorage.getItem(LAST_USED_KEY);
+export const setLastUsedCollectionId = (id: string): void => localStorage.setItem(LAST_USED_KEY, id);
 
-const setItems = (items) => writeJson(ITEMS_KEY, items);
-const setCollections = (collections) => writeJson(COLLECTIONS_KEY, collections);
+const setItems = (items: ItemsMap): void => writeJson(ITEMS_KEY, items);
+const setCollections = (collections: Collection[]): void => writeJson(COLLECTIONS_KEY, collections);
 
-export const getCollectionById = (id) => getCollections().find(c => c.id === id);
+export const getCollectionById = (id: string): Collection | undefined => getCollections().find(c => c.id === id);
 
-export const ensureDefaultCollection = () => {
+export const ensureDefaultCollection = (): string => {
     const collections = getCollections();
     if (collections.length > 0) {
         const lastUsed = getLastUsedCollectionId();
@@ -46,7 +113,7 @@ export const ensureDefaultCollection = () => {
         return collections[0].id;
     }
     const now = Date.now();
-    const collection = {
+    const collection: Collection = {
         id: uuid(),
         name: DEFAULT_COLLECTION_NAME,
         bookmarkIds: [],
@@ -58,24 +125,30 @@ export const ensureDefaultCollection = () => {
     return collection.id;
 };
 
-const garbageCollectItems = (collections, items) => {
-    const referenced = new Set();
+const garbageCollectItems = (collections: Collection[], items: ItemsMap): ItemsMap => {
+    const referenced = new Set<string>();
     for (const c of collections) {
         for (const id of c.bookmarkIds) referenced.add(id);
     }
-    const next = {};
+    const next: ItemsMap = {};
     for (const [id, item] of Object.entries(items)) {
         if (referenced.has(id)) next[id] = item;
     }
     return next;
 };
 
-export const isInCollection = (collectionId, itemId) => {
+export const isInCollection = (collectionId: string, itemId: string): boolean => {
     const c = getCollectionById(collectionId);
     return !!c && c.bookmarkIds.includes(itemId);
 };
 
-export const addToCollection = (collectionId, { subtitleId, videoUrl, startTime }) => {
+export interface AddToCollectionInput {
+    subtitleId: number;
+    videoUrl: string;
+    startTime: number;
+}
+
+export const addToCollection = (collectionId: string, { subtitleId, videoUrl, startTime }: AddToCollectionInput): string | null => {
     const id = makeBookmarkItemId({ subtitleId });
     const items = getItems();
     if (!items[id]) {
@@ -102,7 +175,7 @@ export const addToCollection = (collectionId, { subtitleId, videoUrl, startTime 
     return id;
 };
 
-export const removeFromCollection = (collectionId, itemId) => {
+export const removeFromCollection = (collectionId: string, itemId: string): void => {
     const collections = getCollections();
     const idx = collections.findIndex(c => c.id === collectionId);
     if (idx === -1) return;
@@ -117,7 +190,7 @@ export const removeFromCollection = (collectionId, itemId) => {
     setItems(garbageCollectItems(collections, getItems()));
 };
 
-export const assignToCollections = (itemId, collectionIdSet) => {
+export const assignToCollections = (itemId: string, collectionIdSet: Set<string>): void => {
     const collections = getCollections();
     const now = Date.now();
     const next = collections.map(c => {
@@ -133,14 +206,14 @@ export const assignToCollections = (itemId, collectionIdSet) => {
     setItems(garbageCollectItems(next, getItems()));
 };
 
-export const createCollection = (name) => {
+export const createCollection = (name: string): Collection => {
     const collections = getCollections();
     const trimmed = (name || '').trim();
     if (!trimmed) throw new Error('Collection name cannot be empty');
     if (trimmed.length > MAX_COLLECTION_NAME_LENGTH) throw new Error(`Collection name too long (max ${MAX_COLLECTION_NAME_LENGTH})`);
     const finalName = uniqueName(trimmed, collections.map(c => c.name));
     const now = Date.now();
-    const collection = {
+    const collection: Collection = {
         id: uuid(),
         name: finalName,
         bookmarkIds: [],
@@ -151,7 +224,7 @@ export const createCollection = (name) => {
     return collection;
 };
 
-export const renameCollection = (id, name) => {
+export const renameCollection = (id: string, name: string): void => {
     const collections = getCollections();
     const trimmed = (name || '').trim();
     if (!trimmed) throw new Error('Collection name cannot be empty');
@@ -161,7 +234,7 @@ export const renameCollection = (id, name) => {
     setCollections(next);
 };
 
-export const deleteCollection = (id) => {
+export const deleteCollection = (id: string): void => {
     const collections = getCollections().filter(c => c.id !== id);
     setCollections(collections);
     setItems(garbageCollectItems(collections, getItems()));
@@ -171,14 +244,25 @@ export const deleteCollection = (id) => {
     }
 };
 
-const uniqueName = (desired, existing) => {
+const uniqueName = (desired: string, existing: string[]): string => {
     if (!existing.includes(desired)) return desired;
     let n = 2;
     while (existing.includes(`${desired} (${n})`)) n++;
     return `${desired} (${n})`;
 };
 
-export const exportLean = (collectionId) => {
+export interface LeanExportPayload {
+    version: 1;
+    collection: {
+        id: string;
+        name: string;
+        createdAt: number;
+        updatedAt: number;
+    };
+    items: BookmarkItem[];
+}
+
+export const exportLean = (collectionId: string): LeanExportPayload => {
     const collection = getCollectionById(collectionId);
     if (!collection) throw new Error('Collection not found');
     const items = getItems();
@@ -200,31 +284,32 @@ export const exportLean = (collectionId) => {
     };
 };
 
-export const validateImport = (parsed, rawByteLength) => {
+export function validateImport(parsed: unknown, rawByteLength?: number): asserts parsed is ImportPayload {
     if (rawByteLength !== undefined && rawByteLength > MAX_IMPORT_BYTES) {
         throw new Error('Import file too large');
     }
     if (!parsed || typeof parsed !== 'object') throw new Error('Invalid file');
-    if (parsed.version !== 1) throw new Error('Unsupported version');
-    if (parsed.kind !== undefined && parsed.kind !== 'backup') throw new Error('Unknown kind');
-    const c = parsed.collection;
+    const p = parsed as Record<string, unknown>;
+    if (p.version !== 1) throw new Error('Unsupported version');
+    if (p.kind !== undefined && p.kind !== 'backup') throw new Error('Unknown kind');
+    const c = p.collection as Record<string, unknown> | undefined;
     if (!c || typeof c !== 'object' || typeof c.name !== 'string') throw new Error('Missing collection');
-    if (!Array.isArray(parsed.items)) throw new Error('Missing items');
-    if (parsed.items.length > MAX_ITEMS_PER_IMPORT) throw new Error('Too many items');
-    for (const item of parsed.items) {
+    if (!Array.isArray(p.items)) throw new Error('Missing items');
+    if (p.items.length > MAX_ITEMS_PER_IMPORT) throw new Error('Too many items');
+    for (const item of p.items) {
         if (!item || typeof item !== 'object') throw new Error('Invalid item');
         if (!Number.isInteger(item.subtitleId)) throw new Error('Invalid item.subtitleId');
         if (typeof item.videoUrl !== 'string' || item.videoUrl.length === 0 || item.videoUrl.length > 64) throw new Error('Invalid item.videoUrl');
         if (!Number.isFinite(item.startTime)) throw new Error('Invalid item.startTime');
     }
-};
+}
 
-export const importCollection = (parsed, rawByteLength) => {
+export const importCollection = (parsed: unknown, rawByteLength?: number): Collection => {
     validateImport(parsed, rawByteLength);
     const items = getItems();
     const collections = getCollections();
     const now = Date.now();
-    const newBookmarkIds = [];
+    const newBookmarkIds: string[] = [];
     for (const incoming of parsed.items) {
         const id = makeBookmarkItemId({ subtitleId: incoming.subtitleId });
         if (!items[id]) {
@@ -239,7 +324,7 @@ export const importCollection = (parsed, rawByteLength) => {
         if (!newBookmarkIds.includes(id)) newBookmarkIds.push(id);
     }
     const finalName = uniqueName(parsed.collection.name.trim() || 'Imported', collections.map(c => c.name));
-    const collection = {
+    const collection: Collection = {
         id: uuid(),
         name: finalName,
         bookmarkIds: newBookmarkIds,
@@ -251,10 +336,11 @@ export const importCollection = (parsed, rawByteLength) => {
     return collection;
 };
 
-export const isBackupKind = (parsed) => parsed?.kind === 'backup';
+export const isBackupKind = (parsed: unknown): boolean => (parsed as { kind?: string } | null)?.kind === 'backup';
 
-export const buildBackupView = (parsed) => {
-    const videoMap = new Map();
+export const buildBackupView = (parsed: ImportPayload): BackupView => {
+    type VideoEntry = BackupViewVideo & { firstOrderIndex?: number };
+    const videoMap = new Map<string, VideoEntry>();
     let unresolvedCount = 0;
     parsed.items.forEach((item, i) => {
         if (!item.snapshot) {
@@ -286,7 +372,7 @@ export const buildBackupView = (parsed) => {
         entry.total = entry.subtitles.length;
     }
     const searchResult = Array.from(videoMap.values())
-        .sort((a, b) => a.firstOrderIndex - b.firstOrderIndex);
+        .sort((a, b) => (a.firstOrderIndex ?? 0) - (b.firstOrderIndex ?? 0));
     for (const entry of searchResult) delete entry.firstOrderIndex;
     return {
         collection: parsed.collection,
