@@ -6,12 +6,14 @@ import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AspectRatioIcon from '@mui/icons-material/AspectRatio';
 import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import { useTheme } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import YouTube from 'react-youtube';
 
@@ -26,12 +28,19 @@ const VideoListItem = memo(function VideoListItem(props) {
         showMatchPreviews,
         toggleVideoOptions,
         _onReady,
-        setHostEl
+        setHostEl,
+        isMobile,
+        theatreMode,
+        toggleTheatreMode
     } = props;
     const { url, title, date, total, subtitles } = video;
     const ref = useRef(null);
+    const headerRef = useRef(null);
+    const prevTheatreRef = useRef(null);
     const [playerReady, setPlayerReady] = useState(false);
     const isOpen = open === url;
+    const effectiveTheatre = !!theatreMode && !isMobile;
+    const theme = useTheme();
     useEffect(() => {
         if (isOpen) {
             setHostEl(ref.current);
@@ -39,6 +48,20 @@ const VideoListItem = memo(function VideoListItem(props) {
             setPlayerReady(false);
         }
     }, [isOpen, setHostEl]);
+    useEffect(() => {
+        if (isOpen) {
+            const justOpened = prevTheatreRef.current === null;
+            const theatreToggled = prevTheatreRef.current !== null && prevTheatreRef.current !== effectiveTheatre;
+            if ((justOpened && effectiveTheatre) || theatreToggled) {
+                const timer = setTimeout(() => {
+                    headerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, theme.transitions.duration.standard);
+                prevTheatreRef.current = effectiveTheatre;
+                return () => clearTimeout(timer);
+            }
+        }
+        prevTheatreRef.current = isOpen ? effectiveTheatre : null;
+    }, [isOpen, effectiveTheatre, theme.transitions.duration.standard]);
     let numMatches;
     if (!props.text) {
         numMatches = undefined;
@@ -48,8 +71,8 @@ const VideoListItem = memo(function VideoListItem(props) {
         numMatches = video.matches.length;
     }
     return (
-        <ListItem key={url} disablePadding sx={{ display: 'block' }}>
-        <ListItemButton onClick={() => handleClickSubtitleListItem(url, video, i)}>
+        <ListItem key={url} disablePadding sx={{ display: 'block', scrollMarginTop: 64 }}>
+        <ListItemButton ref={headerRef} onClick={() => handleClickSubtitleListItem(url, video, i)}>
             <ListItemAvatar>
                 <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${url}/default.jpg`} />
             </ListItemAvatar>
@@ -74,25 +97,83 @@ const VideoListItem = memo(function VideoListItem(props) {
         </ListItemButton>
         <Collapse in={isOpen} timeout="auto" unmountOnExit onEntered={() => setPlayerReady(true)} onExit={onCollapseVideoListItem}>
             <Paper elevation={2}>
-            <Box ref={ref}>
-                <Box>
-                    {playerReady ? (
-                    <YouTube
-                    videoId={url}
-                    opts={{
-                        playerVars: {
-                            // https://developers.google.com/youtube/player_parameters
-                            autoplay: 0,
-                        }
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: effectiveTheatre ? 'row' : 'column',
+                }}
+            >
+                <Box
+                    sx={effectiveTheatre ? {
+                        flex: 1,
+                        minWidth: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                    } : {
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
-                    onReady={_onReady}/>
-                    ) : null}
+                >
+                    <Box
+                        sx={effectiveTheatre ? {
+                            position: 'relative',
+                            aspectRatio: '16 / 9',
+                            width: '100%',
+                            maxHeight: '80vh',
+                            '& > div, & iframe': {
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%'
+                            }
+                        } : {
+                            '& > div, & iframe': {
+                                width: '100%',
+                                maxWidth: 640,
+                                aspectRatio: '16 / 9',
+                                height: 'auto'
+                            }
+                        }}
+                    >
+                        {playerReady ? (
+                        <YouTube
+                        videoId={url}
+                        opts={{
+                            width: '100%',
+                            height: effectiveTheatre ? '100%' : '390',
+                            playerVars: {
+                                // https://developers.google.com/youtube/player_parameters
+                                autoplay: 0,
+                            }
+                        }}
+                        onReady={_onReady}/>
+                        ) : null}
+                    </Box>
+                    <Box>
+                        {!isMobile ? (
+                            <IconButton
+                                onClick={toggleTheatreMode}
+                                color={effectiveTheatre ? 'primary' : 'default'}
+                                aria-label="Toggle theatre mode"
+                                title={effectiveTheatre ? 'Exit theatre mode' : 'Enter theatre mode'}
+                            >
+                                <AspectRatioIcon />
+                            </IconButton>
+                        ) : null}
+                        <IconButton onClick={toggleVideoOptions}>
+                            <MoreVertIcon />
+                        </IconButton>
+                    </Box>
                 </Box>
-                <Box>
-                    <IconButton onClick={toggleVideoOptions}>
-                        <MoreVertIcon />
-                    </IconButton>
-                </Box>
+                <Box
+                    ref={ref}
+                    sx={effectiveTheatre ? {
+                        width: 400,
+                        alignSelf: 'stretch',
+                        overflow: 'hidden'
+                    } : undefined}
+                />
             </Box>
             </Paper>
         </Collapse>

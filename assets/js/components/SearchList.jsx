@@ -29,6 +29,17 @@ export default function SearchList(props) {
     const [bookmarkPickerSubtitle, setBookmarkPickerSubtitle] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [theatreMode, setTheatreMode] = useState(() => {
+        return localStorage.getItem('settings-theatreMode') === 'true';
+    });
+
+    const toggleTheatreMode = useCallback(() => {
+        setTheatreMode(prev => {
+            const next = !prev;
+            localStorage.setItem('settings-theatreMode', String(next));
+            return next;
+        });
+    }, []);
 
     const {
         onBookmarkToggle,
@@ -193,7 +204,10 @@ export default function SearchList(props) {
                         text: props.text,
                         tags: props.tags,
                         onFetchMoreSubtitles: props.onFetchMoreSubtitles,
-                        setHostEl
+                        setHostEl,
+                        isMobile,
+                        theatreMode: open === video.url ? theatreMode : undefined,
+                        toggleTheatreMode
                     }}
                 />
             })}
@@ -247,13 +261,14 @@ export default function SearchList(props) {
                 onFetchMoreSubtitles: props.onFetchMoreSubtitles,
                 i: liveCurrentVideo?.i,
                 isLoadingSubtitle,
-                rowHeight: isMobile ? 120 : 96,
+                rowHeight: (isMobile || theatreMode) ? 120 : 96,
                 hostEl,
                 handleClickMobileSubtitleOption,
                 bookmarkedIds: currentVideoBookmarkedIds,
                 onBookmarkToggle: onBookmarkToggle ? handleBookmarkToggle : undefined,
                 onOpenBookmarkPicker: onOpenBookmarkPicker || onPickCollection ? handleOpenBookmarkPicker : undefined,
-                lastUsedCollectionName
+                lastUsedCollectionName,
+                theatreMode: theatreMode && !isMobile
             }}
         />
         </> : ''

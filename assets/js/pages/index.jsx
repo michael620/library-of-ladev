@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Head, Link as InertiaLink, router, usePage } from '@inertiajs/react';
 import NewAppLayout from '@/layouts/NewAppLayout.jsx';
-import '~/css/homepage.css';
 import { Box, Typography, Stack, Card, CardContent } from '@mui/material';
 import Link from '@mui/material/Link';
 import SearchBarBase from '@/components/SearchBarBase.jsx';

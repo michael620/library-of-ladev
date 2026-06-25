@@ -21,9 +21,11 @@ const SubtitleList = memo(function SubtitleList(props) {
         bookmarkedIds,
         onBookmarkToggle,
         onOpenBookmarkPicker,
-        lastUsedCollectionName
+        lastUsedCollectionName,
+        theatreMode
     } = props;
     const url = video?.url;
+    const maxHeight = theatreMode ? '80vh' : '50vh';
     const activeIndex = useMemo(() => {
         if (currentTime === null || !video?.subtitles) return -1;
         return video.subtitles.findIndex((s, i) => {
@@ -40,7 +42,7 @@ const SubtitleList = memo(function SubtitleList(props) {
     return createPortal(
         <>
         {video.subtitles ? <FixedSizeList
-            style={{ maxHeight: '50vh', overflowY: 'auto' }}
+            style={{ maxHeight, overflowY: 'auto' }}
             listRef={subtitleContainerRef}
             rowComponent={SubtitleListItem}
             rowCount={video.subtitles.length}
@@ -54,10 +56,11 @@ const SubtitleList = memo(function SubtitleList(props) {
                 bookmarkedIds,
                 onBookmarkToggle,
                 onOpenBookmarkPicker,
-                lastUsedCollectionName
+                lastUsedCollectionName,
+                theatreMode
             }}
         /> : video.matches ? <FixedSizeList
-            style={{ maxHeight: '50vh', overflowY: 'auto' }}
+            style={{ maxHeight, overflowY: 'auto' }}
             listRef={subtitleContainerRef}
             rowComponent={MatchListItem}
             rowCount={video.matches.length}

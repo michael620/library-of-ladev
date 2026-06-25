@@ -23,7 +23,8 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
         bookmarkedIds,
         onBookmarkToggle,
         onOpenBookmarkPicker,
-        lastUsedCollectionName
+        lastUsedCollectionName,
+        theatreMode
     } = props;
     if (!video) return null;
     const { url, subtitles } = video;
@@ -39,7 +40,7 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
         paddingTop: 0,
         paddingBottom: 0
     };
-    const primaryText = <Typography height={{ xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
+    const primaryText = <Typography height={theatreMode ? '4.5rem' : { xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
     const subtitleData = { subtitleId, videoUrl: url, startTime, text, timestamp };
     return (
         <ListItem style={props.style} disablePadding
@@ -53,7 +54,7 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
             <ListItemButton onClick={() => handleClickSubtitle(startTime)} sx={{ flex: 1 }}>
                 <ListItemText primary={primaryText} secondary={`Timestamp: ${timestamp}`} />
             </ListItemButton>
-            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'none', 'sm': 'flex' }}}>
+            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: theatreMode ? 'none' : { xs: 'none', 'sm': 'flex' }}}>
                 <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => handleClickCopy(e, text)}>
                     <ArticleIcon />
                 </IconButton>
@@ -86,7 +87,7 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
                     </Box>
                 ) : null}
             </Box>
-            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: { xs: 'flex', 'sm': 'none' }}}>
+            <Box flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2, display: theatreMode ? 'flex' : { xs: 'flex', 'sm': 'none' }}}>
                 <IconButton edge="end" aria-label="subtitle-options" title='More options' onClick={(e) => handleClickMobileSubtitleOption(e, subtitleData)}>
                     <MoreVertIcon />
                 </IconButton>
