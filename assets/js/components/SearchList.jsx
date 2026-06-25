@@ -63,8 +63,11 @@ export default function SearchList(props) {
     }, [open]);
 
     const handleClickMobileSubtitleOption = useCallback((event, subtitleData) => {
-        setMobileOptionsAnchorEl(mobileOptionsAnchorEl === event.currentTarget ? null : event.currentTarget);
-        setPopperSubtitle(mobileOptionsAnchorEl === event.currentTarget ? null : subtitleData);
+        if (mobileOptionsAnchorEl === event.currentTarget) {
+            return;
+        }
+        setMobileOptionsAnchorEl(event.currentTarget);
+        setPopperSubtitle(subtitleData);
     }, [mobileOptionsAnchorEl]);
 
     const onCollapseVideoListItem = useCallback(() => {
@@ -226,6 +229,7 @@ export default function SearchList(props) {
         />
         <VideoExportPopper
             anchorEl={videoOptionsAnchorEl}
+            onClose={() => setVideoOptionsAnchorEl(null)}
             liveCurrentVideo={liveCurrentVideo}
             player={player}
             bookmarksMode={props.bookmarksMode}
@@ -235,6 +239,8 @@ export default function SearchList(props) {
         />
         <MobileOptionsPopper
             anchorEl={mobileOptionsAnchorEl}
+            onClose={() => setMobileOptionsAnchorEl(null)}
+            isPickerOpen={!!bookmarkPickerAnchorEl}
             subtitle={popperSubtitle}
             bookmarkedIdsByVideoUrl={bookmarkedIdsByVideoUrl}
             onCopy={handleClickCopy}

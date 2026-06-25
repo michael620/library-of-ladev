@@ -5,6 +5,9 @@ import IconButton from '@mui/material/IconButton';
 import Switch from '@mui/material/Switch';
 import HelpIcon from '@mui/icons-material/Help';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { router } from '@inertiajs/react';
 import TuneIcon from '@mui/icons-material/Tune';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -12,14 +15,13 @@ import SortIcon from '@mui/icons-material/Sort';
 import Popper from '@mui/material/Popper';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -42,6 +44,7 @@ const CustomAutocomplete = (props) => {
         sx={{maxWidth: 'md'}}
         multiple
         disableCloseOnSelect
+        disablePortal
         value={value}
         onChange={(event, newValue) => {
             setValue(newValue);
@@ -80,6 +83,7 @@ export default function SearchBar(props) {
     const [endDate, setEndDate] = useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
     const [includeTags, setIncludeTags] = useState(props.searchParams?.includeTags || []);
     const [excludeTags, setExcludeTags] = useState(props.searchParams?.excludeTags || []);
+    const [text, setText] = useState(props.searchParams?.text || '');
     const [disabled, setDisabled] = useState(false);
     const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
     const [advancedSearchAnchorEl, setAdvancedSearchAnchorEl] = useState(null);
@@ -93,6 +97,35 @@ export default function SearchBar(props) {
     };
     const toggleHelpDialog = () => {
         setIsHelpDialogOpen(!isHelpDialogOpen);
+    };
+    const closeSettings = () => setSettingsAnchorEl(null);
+    const closeAdvancedSearch = () => setAdvancedSearchAnchorEl(null);
+    const onPopperKeyDown = (closeHandler) => (event) => {
+        if (event.key === 'Escape') {
+            closeHandler();
+        }
+    };
+    const areFiltersDirty = () => {
+        const applied = props.searchParams || {};
+        const stagedStart = startDate ? startDate.format('YYYY-MM-DD') : '';
+        const stagedEnd = endDate ? endDate.format('YYYY-MM-DD') : '';
+        const appliedStart = applied.startDate || '';
+        const appliedEnd = applied.endDate || '';
+        const arraysEqual = (a, b) => {
+            if (a.length !== b.length) return false;
+            const aSorted = [...a].sort();
+            const bSorted = [...b].sort();
+            return aSorted.every((v, i) => v === bSorted[i]);
+        };
+        return (
+            (title || '') !== (applied.title || '') ||
+            Boolean(isAscending) !== Boolean(applied.isAscending) ||
+            Boolean(isFullTextSearch) !== Boolean(applied.isFullTextSearch) ||
+            stagedStart !== appliedStart ||
+            stagedEnd !== appliedEnd ||
+            !arraysEqual(includeTags, applied.includeTags || []) ||
+            !arraysEqual(excludeTags, applied.excludeTags || [])
+        );
     };
   
     const isAdvancedSearchOpen = Boolean(advancedSearchAnchorEl);
@@ -108,9 +141,6 @@ export default function SearchBar(props) {
     };
     const onChangeTitle = (event) => {
         setTitle(event?.target?.value || '');
-    };
-    const onChangeIsAscending = (event) => {
-        setIsAscending(event?.target?.value);
     };
     const onChangeFullTextSearch = (event) => {
         setIsFullTextSearch(event.target.checked);
@@ -128,7 +158,7 @@ export default function SearchBar(props) {
         setShowMatchPreviews(!showMatchPreviews);
     };
 
-    const onSubmit = async (text) => {
+    const runSearch = (textArg) => {
         if (disabled) {
             return;
         }
@@ -136,7 +166,7 @@ export default function SearchBar(props) {
         setIsLoading(true);
         setSettingsAnchorEl(null);
         setAdvancedSearchAnchorEl(null);
-        const data = { text };
+        const data = { text: textArg };
         if (isFullTextSearch) {
             data.isFullTextSearch = isFullTextSearch;
         }
@@ -170,8 +200,14 @@ export default function SearchBar(props) {
             <Button variant="text" size="small" onClick={toggleAdvancedSearch} endIcon={<TuneIcon />}>Filters</Button>
         </Box>
         <Popper id={isSettingsOpen ? 'settings-popper' : undefined} open={isSettingsOpen} anchorEl={settingsAnchorEl} placement='bottom-start'>
-            <Card>
+            <ClickAwayListener onClickAway={closeSettings}>
+            <Card onKeyDown={onPopperKeyDown(closeSettings)}>
             <CardContent>
+            <Box display='flex' justifyContent='flex-end'>
+                <IconButton size="small" onClick={closeSettings} aria-label="Close">
+                    <CloseIcon fontSize="small" />
+                </IconButton>
+            </Box>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center'>
                 <Typography>Help</Typography>
@@ -213,14 +249,19 @@ export default function SearchBar(props) {
             </Box>
             </Box>
             </CardContent>
-            <CardActions sx={{ justifyContent: 'end' }}>
-                <Button disabled={disabled} onClick={() => setSettingsAnchorEl(null)}>Ok</Button>
-            </CardActions>
             </Card>
+            </ClickAwayListener>
         </Popper>
         <Popper id={isAdvancedSearchOpen ? 'advanced-search-popper' : undefined} open={isAdvancedSearchOpen} anchorEl={advancedSearchAnchorEl} placement='bottom-end'>
-            <Card>
+            <ClickAwayListener onClickAway={closeAdvancedSearch}>
+            <Card onKeyDown={onPopperKeyDown(closeAdvancedSearch)}>
+            <form onSubmit={(e) => { e.preventDefault(); runSearch(text); }}>
             <CardContent>
+            <Box display='flex' justifyContent='flex-end'>
+                <IconButton size="small" onClick={closeAdvancedSearch} aria-label="Close">
+                    <CloseIcon fontSize="small" />
+                </IconButton>
+            </Box>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
             <Box display='flex' flexDirection='row' justifyContent='space-between' alignItems='center' sx={{gap:2}}>
                 <TextField
@@ -229,21 +270,28 @@ export default function SearchBar(props) {
                     onChange={onChangeTitle}
                     value={title}
                 />
-                <FormControl fullWidth>
-                    <InputLabel id="sort-label"><SortIcon/> Sort</InputLabel>
-                    <Select
-                        labelId="sort-label"
+                <Box display='flex' flexDirection='row' alignItems='center' sx={{gap:1, flexShrink:0}}>
+                    <SortIcon fontSize='small' />
+                    <Typography variant='body2'>Sort:</Typography>
+                    <ToggleButtonGroup
+                        size='small'
+                        exclusive
                         value={isAscending}
-                        onChange={onChangeIsAscending}
-                        label="Sort"
-                        MenuProps={{
-                            disableScrollLock: true
+                        onChange={(_event, newValue) => {
+                            if (newValue !== null) setIsAscending(newValue);
                         }}
+                        aria-label='Sort order'
                     >
-                        <MenuItem value={true}>Oldest First</MenuItem>
-                        <MenuItem value={false}>Newest First</MenuItem>
-                    </Select>
-                </FormControl>
+                        <ToggleButton value={false} aria-label='Newest first'>
+                            <ArrowDownwardIcon fontSize='small' sx={{ mr: 0.5 }} />
+                            Newest
+                        </ToggleButton>
+                        <ToggleButton value={true} aria-label='Oldest first'>
+                            <ArrowUpwardIcon fontSize='small' sx={{ mr: 0.5 }} />
+                            Oldest
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                 <DatePicker
@@ -255,6 +303,7 @@ export default function SearchBar(props) {
                     format="YYYY-MM-DD"
                     value={startDate}
                     onChange={(newValue) => setStartDate(newValue)}
+                    slotProps={{ popper: { disablePortal: true } }}
                 />
                 <HorizontalRuleIcon/>
                 <DatePicker
@@ -266,6 +315,7 @@ export default function SearchBar(props) {
                     format="YYYY-MM-DD"
                     value={endDate}
                     onChange={(newValue) => setEndDate(newValue)}
+                    slotProps={{ popper: { disablePortal: true } }}
                 />
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
@@ -287,10 +337,20 @@ export default function SearchBar(props) {
             </Box>
             </CardContent>
             <CardActions sx={{ justifyContent: 'end' }}>
-                <Button onClick={handleReset}>Reset</Button>
-                <Button disabled={disabled} onClick={() => setAdvancedSearchAnchorEl(null)}>Ok</Button>
+                <Button type="button" onClick={handleReset}>Reset</Button>
+                <Button
+                    type="submit"
+                    disabled={disabled}
+                    variant={areFiltersDirty() ? 'contained' : 'text'}
+                    color="primary"
+                    sx={{ minWidth: 88 }}
+                >
+                    Apply
+                </Button>
             </CardActions>
+            </form>
             </Card>
+            </ClickAwayListener>
         </Popper>
         <Dialog
             open={isHelpDialogOpen}
@@ -334,9 +394,10 @@ export default function SearchBar(props) {
     return (<>
     <SearchBarBase
         showFullSearchBar={showFullSearchBar}
-        onSubmit={onSubmit}
+        onSubmit={runSearch}
         disabled={disabled}
-        text={props.searchParams?.text}
+        value={text}
+        onChange={setText}
         isLoading={isLoading}
     />
     {settingsAndFiltersComponents}

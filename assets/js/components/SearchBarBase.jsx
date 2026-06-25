@@ -9,8 +9,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import Box from '@mui/material/Box';
 
 export default function SearchBarBase(props) {
-    const { showFullSearchBar, disabled, isLoading, placeholder } = props;
-    const [text, setText] = useState(props.text || '');
+    const { showFullSearchBar, disabled, isLoading, placeholder, value, onChange } = props;
+    const isControlled = value !== undefined && typeof onChange === 'function';
+    const [internalText, setInternalText] = useState(props.text || '');
+    const text = isControlled ? value : internalText;
+    const setText = isControlled ? onChange : setInternalText;
     const onChangeText = (event) => {
         setText(event?.target?.value || '');
     };

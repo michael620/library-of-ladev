@@ -10,10 +10,13 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import IconButton from '@mui/material/IconButton';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import DownloadIcon from '@mui/icons-material/Download';
 import BrowserUpdatedIcon from '@mui/icons-material/BrowserUpdated';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import CloseIcon from '@mui/icons-material/Close';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
 import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
@@ -21,6 +24,7 @@ import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/c
 export default function VideoExportPopper(props) {
     const {
         anchorEl,
+        onClose,
         liveCurrentVideo,
         player,
         bookmarksMode,
@@ -41,6 +45,16 @@ export default function VideoExportPopper(props) {
             setMaxTime(newMaxTime);
         }
     }, [player.current]);
+
+    const close = () => {
+        if (onClose) onClose();
+    };
+
+    const onPopperKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            close();
+        }
+    };
 
     const handleLoadAllSubtitles = async () => {
         if (!liveCurrentVideo) return;
@@ -63,6 +77,7 @@ export default function VideoExportPopper(props) {
             a.download = `${videoUrl}-${startTime.format('HH:mm:ss')}-${endTime.format('HH:mm:ss')}.txt`;
             a.click();
             window.URL.revokeObjectURL(url);
+            close();
         } catch (err) {
             console.error(err);
             if (onError) onError('Failed to download file.');
@@ -75,8 +90,14 @@ export default function VideoExportPopper(props) {
     const open = Boolean(anchorEl);
     return (
         <Popper id={open ? 'video-options-popper' : undefined} open={open} anchorEl={anchorEl} placement='top-start'>
-            <Card>
+            <ClickAwayListener onClickAway={close}>
+            <Card onKeyDown={onPopperKeyDown}>
             <CardContent>
+            <Box display='flex' justifyContent='flex-end'>
+                <IconButton size="small" onClick={close} aria-label="Close">
+                    <CloseIcon fontSize="small" />
+                </IconButton>
+            </Box>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
                 <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                     <Button
@@ -124,6 +145,7 @@ export default function VideoExportPopper(props) {
                                     timeSteps={{ hours: 1, minutes: 1, seconds: 1 }}
                                     value={startTime}
                                     onChange={(newValue) => setStartTime(newValue)}
+                                    slotProps={{ popper: { disablePortal: true } }}
                                 />
                                 <HorizontalRuleIcon sx={{ display: { xs: 'none', 'sm': 'unset' }}}/>
                                 <TimePicker
@@ -141,6 +163,7 @@ export default function VideoExportPopper(props) {
                                     timeSteps={{ hours: 1, minutes: 1, seconds: 1 }}
                                     value={endTime}
                                     onChange={(newValue) => setEndTime(newValue)}
+                                    slotProps={{ popper: { disablePortal: true } }}
                                 />
                             </Box>
                             <Box>
@@ -158,6 +181,7 @@ export default function VideoExportPopper(props) {
             </Box>
             </CardContent>
             </Card>
+            </ClickAwayListener>
         </Popper>
     );
 }

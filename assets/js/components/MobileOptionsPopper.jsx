@@ -1,6 +1,7 @@
 import Popper from '@mui/material/Popper';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import LinkIcon from '@mui/icons-material/Link';
 import ArticleIcon from '@mui/icons-material/Article';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -10,6 +11,8 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 export default function MobileOptionsPopper(props) {
     const {
         anchorEl,
+        onClose,
+        isPickerOpen,
         subtitle,
         bookmarkedIdsByVideoUrl,
         onCopy,
@@ -21,13 +24,26 @@ export default function MobileOptionsPopper(props) {
     const isBookmarked = subtitle && bookmarkedIdsByVideoUrl
         ? (bookmarkedIdsByVideoUrl.get(subtitle.videoUrl) || new Set()).has(String(subtitle.subtitleId))
         : false;
+    const close = () => {
+        if (onClose) onClose();
+    };
+    const handleClickAway = () => {
+        if (isPickerOpen) return;
+        close();
+    };
+    const onPopperKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            close();
+        }
+    };
     return (
         <Popper id={open ? 'subtitle-options-popper' : undefined} open={open} anchorEl={anchorEl} placement='bottom-end'>
-            <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}}>
-                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => onCopy(e, subtitle?.text)}>
+            <ClickAwayListener onClickAway={handleClickAway}>
+            <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}} onKeyDown={onPopperKeyDown}>
+                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => { onCopy(e, subtitle?.text); close(); }}>
                     <ArticleIcon />
                 </IconButton>
-                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => onCopy(e, `https://www.youtube.com/watch?v=${subtitle?.videoUrl}&t=${subtitle?.startTime}s`)}>
+                <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => { onCopy(e, `https://www.youtube.com/watch?v=${subtitle?.videoUrl}&t=${subtitle?.startTime}s`); close(); }}>
                     <LinkIcon />
                 </IconButton>
                 {showBookmarkControls && subtitle ? (
@@ -37,7 +53,7 @@ export default function MobileOptionsPopper(props) {
                                 edge="end"
                                 aria-label={isBookmarked ? 'remove-bookmark' : 'add-bookmark'}
                                 title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                                onClick={(e) => { e.stopPropagation(); onBookmarkToggle(subtitle); }}
+                                onClick={(e) => { e.stopPropagation(); onBookmarkToggle(subtitle); close(); }}
                             >
                                 {isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
                             </IconButton>
@@ -56,6 +72,7 @@ export default function MobileOptionsPopper(props) {
                     </Box>
                 ) : null}
             </Box>
+            </ClickAwayListener>
         </Popper>
     );
 }

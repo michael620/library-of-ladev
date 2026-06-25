@@ -47,7 +47,7 @@ export default function BookmarkPickerMenu(props) {
         : new Set();
 
     return (
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose} disableScrollLock>
             {(collections || []).map((c) => {
                 const checked = itemCollectionIds.has(c.id);
                 return (
