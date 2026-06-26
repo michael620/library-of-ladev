@@ -11,6 +11,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 import DownloadIcon from '@mui/icons-material/Download';
 import BrowserUpdatedIcon from '@mui/icons-material/BrowserUpdated';
@@ -30,7 +31,12 @@ export default function VideoExportPopper(props) {
         bookmarksMode,
         isLoadingSubtitle,
         fetchSubtitles,
-        onError
+        onError,
+        isMobile,
+        theatreMode,
+        toggleTheatreMode,
+        syncSubtitles,
+        setSyncSubtitles
     } = props;
     const [startTime, setStartTime] = useState(timeStrToDayJs('00:00:00'));
     const [endTime, setEndTime] = useState(timeStrToDayJs('00:00:00'));
@@ -54,6 +60,11 @@ export default function VideoExportPopper(props) {
         if (event.key === 'Escape') {
             close();
         }
+    };
+
+    const handleToggleSyncSubtitles = () => {
+        localStorage.setItem('settings-syncSubtitles', !syncSubtitles);
+        setSyncSubtitles(!syncSubtitles);
     };
 
     const handleLoadAllSubtitles = async () => {
@@ -89,7 +100,7 @@ export default function VideoExportPopper(props) {
     if (!liveCurrentVideo) return null;
     const open = Boolean(anchorEl);
     return (
-        <Popper id={open ? 'video-options-popper' : undefined} open={open} anchorEl={anchorEl} placement='top-start'>
+        <Popper id={open ? 'video-options-popper' : undefined} open={open} anchorEl={anchorEl} placement='bottom-end'>
             <ClickAwayListener onClickAway={close}>
             <Card onKeyDown={onPopperKeyDown}>
             <CardContent>
@@ -99,6 +110,23 @@ export default function VideoExportPopper(props) {
                 </IconButton>
             </Box>
             <Box display='flex' flexDirection='column' justifyContent='start' sx={{gap:2}}>
+                <Box display='flex' flexDirection='column' justifyContent='start'>
+                    {!isMobile ? (
+                        <FormControlLabel
+                            control={<Switch/>}
+                            checked={!!theatreMode}
+                            label={'Theatre mode'}
+                            onChange={toggleTheatreMode}
+                        />
+                    ) : null}
+                    <FormControlLabel
+                        control={<Switch/>}
+                        checked={!!syncSubtitles}
+                        label={'Auto-scroll to active subtitle'}
+                        onChange={handleToggleSyncSubtitles}
+                    />
+                </Box>
+                <Divider />
                 <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
                     <Button
                         loading={isLoadingSubtitle}

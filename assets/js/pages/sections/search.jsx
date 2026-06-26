@@ -252,8 +252,6 @@ export default function Search(props) {
         showFullSearchBar={true}
         showTags={showTags}
         setShowTags={setShowTags}
-        syncSubtitles={syncSubtitles}
-        setSyncSubtitles={setSyncSubtitles}
         showMatchPreviews={showMatchPreviews}
         setShowMatchPreviews={setShowMatchPreviews}
         tags={props.tags}
@@ -272,6 +270,7 @@ export default function Search(props) {
             fetchSubtitles={fetchSubtitles}
             isLoadingSubtitle={isLoadingSubtitle}
             syncSubtitles={syncSubtitles}
+            setSyncSubtitles={setSyncSubtitles}
             tags={props.tags}
             collections={collections}
             lastUsedCollectionName={lastUsedCollectionName}

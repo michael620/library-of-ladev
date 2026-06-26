@@ -6,7 +6,6 @@ import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import AspectRatioIcon from '@mui/icons-material/AspectRatio';
 import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Box from '@mui/material/Box';
@@ -30,12 +29,11 @@ const VideoListItem = memo(function VideoListItem(props) {
         _onReady,
         setHostEl,
         isMobile,
-        theatreMode,
-        toggleTheatreMode
+        theatreMode
     } = props;
     const { url, title, date, total, subtitles } = video;
     const ref = useRef(null);
-    const headerRef = useRef(null);
+    const playerRef = useRef(null);
     const prevTheatreRef = useRef(null);
     const [playerReady, setPlayerReady] = useState(false);
     const isOpen = open === url;
@@ -54,7 +52,7 @@ const VideoListItem = memo(function VideoListItem(props) {
             const theatreToggled = prevTheatreRef.current !== null && prevTheatreRef.current !== effectiveTheatre;
             if ((justOpened && effectiveTheatre) || theatreToggled) {
                 const timer = setTimeout(() => {
-                    headerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, theme.transitions.duration.standard);
                 prevTheatreRef.current = effectiveTheatre;
                 return () => clearTimeout(timer);
@@ -70,9 +68,10 @@ const VideoListItem = memo(function VideoListItem(props) {
     } else if (video.matches) {
         numMatches = video.matches.length;
     }
+    const stopPropagation = (e) => e.stopPropagation();
     return (
         <ListItem key={url} disablePadding sx={{ display: 'block', scrollMarginTop: 64 }}>
-        <ListItemButton ref={headerRef} onClick={() => handleClickSubtitleListItem(url, video, i)}>
+        <ListItemButton onClick={() => handleClickSubtitleListItem(url, video, i)}>
             <ListItemAvatar>
                 <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${url}/default.jpg`} />
             </ListItemAvatar>
@@ -93,7 +92,16 @@ const VideoListItem = memo(function VideoListItem(props) {
                     )) : '' : ''}
                 </Box>
             } />
-            {isOpen ? <ExpandLess /> : <ExpandMore />}
+            {isOpen ? (
+                <Box display='flex' alignItems='center'>
+                    <Box display='flex' alignItems='center' onClick={stopPropagation}>
+                        <IconButton onClick={toggleVideoOptions} aria-label="Video options" title="Video options">
+                            <MoreVertIcon />
+                        </IconButton>
+                    </Box>
+                    <ExpandLess />
+                </Box>
+            ) : <ExpandMore />}
         </ListItemButton>
         <Collapse in={isOpen} timeout="auto" unmountOnExit onEntered={() => setPlayerReady(true)} onExit={onCollapseVideoListItem}>
             <Paper elevation={2}>
@@ -115,6 +123,7 @@ const VideoListItem = memo(function VideoListItem(props) {
                     }}
                 >
                     <Box
+                        ref={playerRef}
                         sx={effectiveTheatre ? {
                             position: 'relative',
                             aspectRatio: '16 / 9',
@@ -149,21 +158,6 @@ const VideoListItem = memo(function VideoListItem(props) {
                         }}
                         onReady={_onReady}/>
                         ) : null}
-                    </Box>
-                    <Box>
-                        {!isMobile ? (
-                            <IconButton
-                                onClick={toggleTheatreMode}
-                                color={effectiveTheatre ? 'primary' : 'default'}
-                                aria-label="Toggle theatre mode"
-                                title={effectiveTheatre ? 'Exit theatre mode' : 'Enter theatre mode'}
-                            >
-                                <AspectRatioIcon />
-                            </IconButton>
-                        ) : null}
-                        <IconButton onClick={toggleVideoOptions}>
-                            <MoreVertIcon />
-                        </IconButton>
                     </Box>
                 </Box>
                 <Box

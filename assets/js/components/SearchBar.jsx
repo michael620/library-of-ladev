@@ -75,7 +75,7 @@ const CustomAutocomplete = (props) => {
 };
 
 export default function SearchBar(props) {
-    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, syncSubtitles, setSyncSubtitles, showMatchPreviews, setShowMatchPreviews } = props;
+    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, showMatchPreviews, setShowMatchPreviews } = props;
     const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = useState(props.searchParams?.title || '');
     const [isAscending, setIsAscending] = useState(props.searchParams?.isAscending || false);
@@ -149,10 +149,6 @@ export default function SearchBar(props) {
         localStorage.setItem('settings-showTags', !showTags);
         setShowTags(!showTags);
     };
-    const toggleSyncSubtitles = () => {
-        localStorage.setItem('settings-syncSubtitles', !syncSubtitles);
-        setSyncSubtitles(!syncSubtitles);
-    };
     const toggleShowMatchPreviews = () => {
         localStorage.setItem('settings-showMatchPreviews', !showMatchPreviews);
         setShowMatchPreviews(!showMatchPreviews);
@@ -221,14 +217,6 @@ export default function SearchBar(props) {
                     checked={isFullTextSearch}
                     label={'Full Text Search'}
                     onChange={onChangeFullTextSearch}
-                />
-            </Box>
-            <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>
-                <FormControlLabel
-                    control={<Switch/>}
-                    checked={syncSubtitles}
-                    label={'Sync subtitles with player'}
-                    onChange={toggleSyncSubtitles}
                 />
             </Box>
             <Box display='flex' flexDirection='row' justifyContent='start' alignItems='center' sx={{gap:2}}>

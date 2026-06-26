@@ -13,7 +13,7 @@ import MobileOptionsPopper from './MobileOptionsPopper';
 import BookmarkPickerMenu from './BookmarkPickerMenu';
 
 export default function SearchList(props) {
-    const { isLoading, isLoadingSubtitle, showTags, syncSubtitles, showMatchPreviews } = props;
+    const { isLoading, isLoadingSubtitle, showTags, syncSubtitles, setSyncSubtitles, showMatchPreviews } = props;
     const player = useRef(null);
     const subtitleContainerRef = useRef(null);
     const [open, setOpen] = useState(null);
@@ -209,8 +209,7 @@ export default function SearchList(props) {
                         onFetchMoreSubtitles: props.onFetchMoreSubtitles,
                         setHostEl,
                         isMobile,
-                        theatreMode: open === video.url ? theatreMode : undefined,
-                        toggleTheatreMode
+                        theatreMode: open === video.url ? theatreMode : undefined
                     }}
                 />
             })}
@@ -236,6 +235,11 @@ export default function SearchList(props) {
             isLoadingSubtitle={isLoadingSubtitle}
             fetchSubtitles={props.fetchSubtitles}
             onError={showSnackbar}
+            isMobile={isMobile}
+            theatreMode={theatreMode}
+            toggleTheatreMode={toggleTheatreMode}
+            syncSubtitles={syncSubtitles}
+            setSyncSubtitles={setSyncSubtitles}
         />
         <MobileOptionsPopper
             anchorEl={mobileOptionsAnchorEl}
