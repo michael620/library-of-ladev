@@ -121,11 +121,11 @@ export default function NewAppLayout({ children }: NewAppLayoutProps) {
                 <Box textAlign='left' display='flex' flexDirection='column'>
                     <Typography fontWeight='bold' variant='caption'>Site Map</Typography>
                     <Box textAlign='left' display='flex' flexDirection='row' gap={2}>
-                        <Typography component={InertiaLink} variant='caption' href="/">Home</Typography>
-                        <Typography component={InertiaLink} variant='caption' href="/search">Search</Typography>
-                        <Typography component={InertiaLink} variant='caption' href="/bookmarks">Bookmarks</Typography>
-                        <Typography component={InertiaLink} variant='caption' onClick={() => setAboutDialogOpen(true)}>About</Typography>
-                        <Typography component={InertiaLink} variant='caption' href="/docs">API</Typography>
+                        <Link component={InertiaLink} variant='caption' href="/" color="inherit" underline="hover">Home</Link>
+                        <Link component={InertiaLink} variant='caption' href="/search" color="inherit" underline="hover">Search</Link>
+                        <Link component={InertiaLink} variant='caption' href="/bookmarks" color="inherit" underline="hover">Bookmarks</Link>
+                        <Link component="button" variant='caption' color="inherit" underline="hover" onClick={() => setAboutDialogOpen(true)} sx={{ background: 'none', border: 'none', p: 0, cursor: 'pointer' }}>About</Link>
+                        <Link component={InertiaLink} variant='caption' href="/docs" color="inherit" underline="hover">API</Link>
                         <AboutDialog open={aboutDialogOpen} onClose={() => setAboutDialogOpen(false)} />
                     </Box>
                 </Box>
