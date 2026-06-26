@@ -11,8 +11,25 @@ import ArticleIcon from '@mui/icons-material/Article';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import type { CSSProperties, ReactElement } from 'react';
+import type { SubtitleWithVideo, Video } from '@/types';
 
-const SubtitleListItem = memo(function SubtitleListItem(props) {
+export interface SubtitleListItemRowProps {
+    video: Video | null | undefined;
+    activeIndex: number;
+    handleClickSubtitle: (startTime: number) => void;
+    handleClickCopy: (event: React.MouseEvent<HTMLElement>, text: string) => void;
+    handleClickMobileSubtitleOption: (event: React.MouseEvent<HTMLElement>, subtitle: SubtitleWithVideo) => void;
+    bookmarkedIds?: Set<string>;
+    onBookmarkToggle?: (subtitle: SubtitleWithVideo) => void;
+    onOpenBookmarkPicker?: (anchorEl: HTMLElement, subtitle: SubtitleWithVideo) => void;
+    lastUsedCollectionName?: string;
+    theatreMode?: boolean;
+}
+
+type SubtitleListItemProps = SubtitleListItemRowProps & { index: number; style?: CSSProperties };
+
+const SubtitleListItem = memo(function SubtitleListItem(props: SubtitleListItemProps): ReactElement | null {
     const {
         index,
         video,
@@ -26,7 +43,7 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
         lastUsedCollectionName,
         theatreMode
     } = props;
-    if (!video) return null;
+    if (!video || !video.subtitles) return null;
     const { url, subtitles } = video;
     const subtitle = subtitles[index];
     const { startTime, timestamp, text, subtitleId } = subtitle;
@@ -41,7 +58,7 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
         paddingBottom: 0
     };
     const primaryText = <Typography height={theatreMode ? '4.5rem' : { xs: '4.5rem', sm: '3rem' }} sx={{overflowWrap: 'break-word', wordBreak: 'break-word', overflow: 'auto'}}>{text}</Typography>;
-    const subtitleData = { subtitleId, videoUrl: url, startTime, text, timestamp };
+    const subtitleData: SubtitleWithVideo = { subtitleId, videoUrl: url, startTime, text, timestamp };
     return (
         <ListItem style={props.style} disablePadding
         sx={(theme) => (isActive ? {
@@ -61,7 +78,7 @@ const SubtitleListItem = memo(function SubtitleListItem(props) {
                 <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => handleClickCopy(e, `https://www.youtube.com/watch?v=${url}&t=${startTime}s`)}>
                     <LinkIcon />
                 </IconButton>
-                {showBookmark ? (
+                {showBookmark && onBookmarkToggle ? (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <IconButton
                             edge="end"

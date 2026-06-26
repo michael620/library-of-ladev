@@ -9,8 +9,20 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import CheckIcon from '@mui/icons-material/Check';
 import { MAX_COLLECTION_NAME_LENGTH } from '@/utils/bookmarks';
+import type { Collection } from '@/utils/bookmarks';
+import type { SubtitleWithVideo } from '@/types';
 
-export default function BookmarkPickerMenu(props) {
+export interface BookmarkPickerMenuProps {
+    anchorEl: HTMLElement | null;
+    subtitle: SubtitleWithVideo | null;
+    collections?: Collection[];
+    bookmarkedCollectionIdsByItemId?: Map<string, Set<string>>;
+    onClose: () => void;
+    onPickCollection: (collection: Collection, subtitle: SubtitleWithVideo | null) => void;
+    onCreateCollection: (name: string, subtitle: SubtitleWithVideo | null) => void;
+}
+
+export default function BookmarkPickerMenu(props: BookmarkPickerMenuProps) {
     const {
         anchorEl,
         subtitle,
@@ -20,8 +32,8 @@ export default function BookmarkPickerMenu(props) {
         onPickCollection,
         onCreateCollection
     } = props;
-    const [newCollectionMode, setNewCollectionMode] = useState(false);
-    const [newCollectionName, setNewCollectionName] = useState('');
+    const [newCollectionMode, setNewCollectionMode] = useState<boolean>(false);
+    const [newCollectionName, setNewCollectionName] = useState<string>('');
 
     const handleClose = () => {
         setNewCollectionMode(false);
@@ -29,7 +41,7 @@ export default function BookmarkPickerMenu(props) {
         onClose();
     };
 
-    const handlePick = (collection) => {
+    const handlePick = (collection: Collection) => {
         onPickCollection(collection, subtitle);
         handleClose();
     };
@@ -43,8 +55,8 @@ export default function BookmarkPickerMenu(props) {
 
     const itemId = subtitle ? String(subtitle.subtitleId) : null;
     const itemCollectionIds = itemId && bookmarkedCollectionIdsByItemId
-        ? bookmarkedCollectionIdsByItemId.get(itemId) || new Set()
-        : new Set();
+        ? bookmarkedCollectionIdsByItemId.get(itemId) || new Set<string>()
+        : new Set<string>();
 
     return (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose} disableScrollLock>

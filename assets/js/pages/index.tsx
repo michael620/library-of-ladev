@@ -1,24 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Head, Link as InertiaLink, router, usePage } from '@inertiajs/react';
-import NewAppLayout from '@/layouts/NewAppLayout.jsx';
+import NewAppLayout from '@/layouts/NewAppLayout';
 import { Box, Typography, Stack, Card, CardContent } from '@mui/material';
 import Link from '@mui/material/Link';
-import SearchBarBase from '@/components/SearchBarBase.jsx';
+import SearchBarBase from '@/components/SearchBarBase';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 
-Index.layout = (page) => <NewAppLayout>{page}</NewAppLayout>
+Index.layout = (page: ReactNode) => <NewAppLayout>{page}</NewAppLayout>
 export default function Index() {
     const theme = useTheme();
     const isLargeScreen = useMediaQuery(theme.breakpoints.up('sm'));
     const url = usePage().url;
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     useEffect(() => {
         setIsLoading(false);
     }, [url]);
 
-    const onSubmit = (text) => {
+    const onSubmit = (text: string) => {
         setIsLoading(true);
         router.visit('/search', {
             data: { text }

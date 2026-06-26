@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTheme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Switch from '@mui/material/Switch';
@@ -9,6 +8,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { router } from '@inertiajs/react';
+import type { FormDataConvertible } from '@inertiajs/core';
 import TuneIcon from '@mui/icons-material/Tune';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SortIcon from '@mui/icons-material/Sort';
@@ -16,10 +16,6 @@ import Popper from '@mui/material/Popper';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -27,72 +23,47 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
-import Autocomplete from '@mui/material/Autocomplete';
-import Chip from '@mui/material/Chip';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import SearchBarBase from '@/components/SearchBarBase.jsx';
-import dayjs from 'dayjs';
+import SearchBarBase from '@/components/SearchBarBase';
+import CustomAutocomplete from '@/components/CustomAutocomplete';
+import HelpDialog from '@/components/HelpDialog';
+import dayjs, { type Dayjs } from 'dayjs';
+import type { SearchParams, TagsMap } from '@/types';
 
 const minDate = dayjs('2022-12-19');
 const maxDate = dayjs();
 
-const CustomAutocomplete = (props) => {
-    const theme = useTheme();
-    const {value, setValue, label } = props;
-    return <Autocomplete
-        fullWidth
-        sx={{maxWidth: 'md'}}
-        multiple
-        disableCloseOnSelect
-        disablePortal
-        value={value}
-        onChange={(event, newValue) => {
-            setValue(newValue);
-        }}
-        id="tags"
-        options={Object.keys(props.tags).sort((a, b) => {
-            if (props.tags[a].order !== props.tags[b].order) return props.tags[a].order - props.tags[b].order;
-            return a.localeCompare(b);
-        })}
-        getOptionLabel={(option) => option}
-        groupBy={(option) => props.tags[option].text}
-        renderTags={(v, getTagProps) =>
-            v.map((option, index) => (
-                <Chip
-                    {...getTagProps({ index })}
-                    key={option}
-                    label={option}
-                    sx={{
-                        backgroundColor: theme.palette[props.tags[option].color][theme.palette.mode],
-                    }}
-                />
-            ))
-        }
-        renderInput={(params) => (
-            <TextField {...params} label={label} />
-        )}
-    />
-};
+export interface SearchBarProps {
+    isLoading: boolean;
+    setIsLoading: (next: boolean) => void;
+    showFullSearchBar?: boolean;
+    searchParams?: SearchParams;
+    showTags: boolean;
+    setShowTags: (next: boolean) => void;
+    showMatchPreviews: boolean;
+    setShowMatchPreviews: (next: boolean) => void;
+    tags: TagsMap;
+}
 
-export default function SearchBar(props) {
+export default function SearchBar(props: SearchBarProps) {
     const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, showMatchPreviews, setShowMatchPreviews } = props;
-    const [isFullTextSearch, setIsFullTextSearch] = useState(props.searchParams?.isFullTextSearch || false);
-    const [title, setTitle] = useState(props.searchParams?.title || '');
-    const [isAscending, setIsAscending] = useState(props.searchParams?.isAscending || false);
-    const [startDate, setStartDate] = useState(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
-    const [endDate, setEndDate] = useState(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
-    const [includeTags, setIncludeTags] = useState(props.searchParams?.includeTags || []);
-    const [excludeTags, setExcludeTags] = useState(props.searchParams?.excludeTags || []);
-    const [text, setText] = useState(props.searchParams?.text || '');
-    const [disabled, setDisabled] = useState(false);
-    const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-    const [advancedSearchAnchorEl, setAdvancedSearchAnchorEl] = useState(null);
-    const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
+    const [isFullTextSearch, setIsFullTextSearch] = useState<boolean>(props.searchParams?.isFullTextSearch || false);
+    const [title, setTitle] = useState<string>(props.searchParams?.title || '');
+    const [isAscending, setIsAscending] = useState<boolean>(props.searchParams?.isAscending || false);
+    const [startDate, setStartDate] = useState<Dayjs | null>(props.searchParams?.startDate ? dayjs(props.searchParams?.startDate) : null);
+    const [endDate, setEndDate] = useState<Dayjs | null>(props.searchParams?.endDate ? dayjs(props.searchParams?.endDate) : null);
+    const [includeTags, setIncludeTags] = useState<string[]>(props.searchParams?.includeTags || []);
+    const [excludeTags, setExcludeTags] = useState<string[]>(props.searchParams?.excludeTags || []);
+    const [text, setText] = useState<string>(props.searchParams?.text || '');
+    const [disabled, setDisabled] = useState<boolean>(false);
+    const [isHelpDialogOpen, setIsHelpDialogOpen] = useState<boolean>(false);
+    const [advancedSearchAnchorEl, setAdvancedSearchAnchorEl] = useState<HTMLElement | null>(null);
+    const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLElement | null>(null);
 
-    const toggleSettings = (event) => {
+    const toggleSettings = (event: React.MouseEvent<HTMLElement>) => {
         setSettingsAnchorEl(settingsAnchorEl ? null : event.currentTarget);
     };
-    const toggleAdvancedSearch = (event) => {
+    const toggleAdvancedSearch = (event: React.MouseEvent<HTMLElement>) => {
         setAdvancedSearchAnchorEl(advancedSearchAnchorEl ? null : event.currentTarget);
     };
     const toggleHelpDialog = () => {
@@ -100,18 +71,18 @@ export default function SearchBar(props) {
     };
     const closeSettings = () => setSettingsAnchorEl(null);
     const closeAdvancedSearch = () => setAdvancedSearchAnchorEl(null);
-    const onPopperKeyDown = (closeHandler) => (event) => {
+    const onPopperKeyDown = (closeHandler: () => void) => (event: React.KeyboardEvent) => {
         if (event.key === 'Escape') {
             closeHandler();
         }
     };
-    const areFiltersDirty = () => {
-        const applied = props.searchParams || {};
+    const areFiltersDirty = (): boolean => {
+        const applied: SearchParams = props.searchParams || {};
         const stagedStart = startDate ? startDate.format('YYYY-MM-DD') : '';
         const stagedEnd = endDate ? endDate.format('YYYY-MM-DD') : '';
         const appliedStart = applied.startDate || '';
         const appliedEnd = applied.endDate || '';
-        const arraysEqual = (a, b) => {
+        const arraysEqual = (a: string[], b: string[]): boolean => {
             if (a.length !== b.length) return false;
             const aSorted = [...a].sort();
             const bSorted = [...b].sort();
@@ -127,7 +98,7 @@ export default function SearchBar(props) {
             !arraysEqual(excludeTags, applied.excludeTags || [])
         );
     };
-  
+
     const isAdvancedSearchOpen = Boolean(advancedSearchAnchorEl);
     const isSettingsOpen = Boolean(settingsAnchorEl);
 
@@ -139,22 +110,22 @@ export default function SearchBar(props) {
         setIncludeTags([]);
         setExcludeTags([]);
     };
-    const onChangeTitle = (event) => {
+    const onChangeTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
         setTitle(event?.target?.value || '');
     };
-    const onChangeFullTextSearch = (event) => {
-        setIsFullTextSearch(event.target.checked);
+    const onChangeFullTextSearch = (_event: React.SyntheticEvent, checked: boolean) => {
+        setIsFullTextSearch(checked);
     };
     const toggleShowTags = () => {
-        localStorage.setItem('settings-showTags', !showTags);
+        localStorage.setItem('settings-showTags', String(!showTags));
         setShowTags(!showTags);
     };
     const toggleShowMatchPreviews = () => {
-        localStorage.setItem('settings-showMatchPreviews', !showMatchPreviews);
+        localStorage.setItem('settings-showMatchPreviews', String(!showMatchPreviews));
         setShowMatchPreviews(!showMatchPreviews);
     };
 
-    const runSearch = (textArg) => {
+    const runSearch = (textArg: string) => {
         if (disabled) {
             return;
         }
@@ -162,7 +133,7 @@ export default function SearchBar(props) {
         setIsLoading(true);
         setSettingsAnchorEl(null);
         setAdvancedSearchAnchorEl(null);
-        const data = { text: textArg };
+        const data: SearchParams = { text: textArg };
         if (isFullTextSearch) {
             data.isFullTextSearch = isFullTextSearch;
         }
@@ -185,7 +156,7 @@ export default function SearchBar(props) {
             data.excludeTags = excludeTags;
         }
         router.visit('/search', {
-            data
+            data: data as Record<string, FormDataConvertible>
         });
     };
 
@@ -340,45 +311,10 @@ export default function SearchBar(props) {
             </Card>
             </ClickAwayListener>
         </Popper>
-        <Dialog
-            open={isHelpDialogOpen}
-            onClose={toggleHelpDialog}
-            maxWidth="md"
-            fullWidth
-        >
-            <DialogTitle variant='h5'>Help</DialogTitle>
-            <DialogContent>
-                <Typography variant="h6">Default search</Typography>
-                <Typography variant="body1">
-                    Searches for sentences along with its timestamp.<br/>
-                    <b>Note</b>: Since timestamps are split by sentences, you may not find a phrase if it spans across multiple sentences.<br/><br/>
-                </Typography>
-                <Typography variant="h6">Search syntax (Default search)</Typography>
-                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>?</b></Typography>
-                <Typography display='inline' variant="body1">: Matches any single character<br/></Typography>
-                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>*</b></Typography>
-                <Typography display='inline' variant="body1">: Matches zero or more characters<br/><br/></Typography>
-                <Typography variant="h6">Full Text Search</Typography>
-                <Typography variant="body1">
-                    Search from the entire video transcript, no timestamp<br/>
-                    <b>Note</b>: Snippets are ranked by relevance. It doesn&apos;t work well if the search terms match across a large context window.<br/>
-                    <b>Tip</b>: You can use Full Text Search first, then search again once you find the exact sentence with Full Text Search off to locate the timestamp.<br/><br/>
-                </Typography>
-                <Typography variant="h6">Search syntax (Full Text Search)</Typography>
-                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>&quot;quoted text&quot;</b></Typography>
-                <Typography display='inline' variant="body1">: Matches the exact phrase<br/></Typography>
-                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>or</b></Typography>
-                <Typography display='inline' variant="body1">: Matches x or y<br/></Typography>
-                <Typography display='inline' variant="body1" fontFamily={['monospace', 'monospace']}><b>-</b></Typography>
-                <Typography display='inline' variant="body1">: Exclude words from your search<br/></Typography>
-            </DialogContent>
-            <DialogActions>
-                <Button size="small" onClick={toggleHelpDialog}>Close</Button>
-            </DialogActions>
-        </Dialog>
+        <HelpDialog open={isHelpDialogOpen} onClose={toggleHelpDialog} />
         </>
     );
-    
+
     return (<>
     <SearchBarBase
         showFullSearchBar={showFullSearchBar}

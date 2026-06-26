@@ -7,8 +7,21 @@ import ArticleIcon from '@mui/icons-material/Article';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import type { SubtitleWithVideo } from '@/types';
 
-export default function MobileOptionsPopper(props) {
+export interface MobileOptionsPopperProps {
+    anchorEl: HTMLElement | null;
+    onClose?: () => void;
+    isPickerOpen?: boolean;
+    subtitle: SubtitleWithVideo | null;
+    bookmarkedIdsByVideoUrl?: Map<string, Set<string>>;
+    onCopy: (event: React.MouseEvent<HTMLElement>, text: string) => void;
+    onBookmarkToggle?: (subtitle: SubtitleWithVideo) => void;
+    onOpenBookmarkPicker?: (anchorEl: HTMLElement, subtitle: SubtitleWithVideo) => void;
+    showBookmarkControls: boolean;
+}
+
+export default function MobileOptionsPopper(props: MobileOptionsPopperProps) {
     const {
         anchorEl,
         onClose,
@@ -22,7 +35,7 @@ export default function MobileOptionsPopper(props) {
     } = props;
     const open = Boolean(anchorEl);
     const isBookmarked = subtitle && bookmarkedIdsByVideoUrl
-        ? (bookmarkedIdsByVideoUrl.get(subtitle.videoUrl) || new Set()).has(String(subtitle.subtitleId))
+        ? (bookmarkedIdsByVideoUrl.get(subtitle.videoUrl) || new Set<string>()).has(String(subtitle.subtitleId))
         : false;
     const close = () => {
         if (onClose) onClose();
@@ -31,7 +44,7 @@ export default function MobileOptionsPopper(props) {
         if (isPickerOpen) return;
         close();
     };
-    const onPopperKeyDown = (event) => {
+    const onPopperKeyDown = (event: React.KeyboardEvent) => {
         if (event.key === 'Escape') {
             close();
         }
@@ -40,7 +53,7 @@ export default function MobileOptionsPopper(props) {
         <Popper id={open ? 'subtitle-options-popper' : undefined} open={open} anchorEl={anchorEl} placement='bottom-end'>
             <ClickAwayListener onClickAway={handleClickAway}>
             <Box display='flex' flexDirection='row' justifyContent='center' alignItems='center' sx={{gap:2, pr:2}} onKeyDown={onPopperKeyDown}>
-                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => { onCopy(e, subtitle?.text); close(); }}>
+                <IconButton edge="end" aria-label="copy-text" title='Copy text to clipboard' onClick={(e) => { onCopy(e, subtitle?.text || ''); close(); }}>
                     <ArticleIcon />
                 </IconButton>
                 <IconButton edge="end" aria-label="copy-link" title='Copy YouTube link to clipboard' onClick={(e) => { onCopy(e, `https://www.youtube.com/watch?v=${subtitle?.videoUrl}&t=${subtitle?.startTime}s`); close(); }}>

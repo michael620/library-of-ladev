@@ -8,20 +8,32 @@ import SendIcon from '@mui/icons-material/Send';
 import SearchIcon from '@mui/icons-material/Search';
 import Box from '@mui/material/Box';
 
-export default function SearchBarBase(props) {
+export interface SearchBarBaseProps {
+    onSubmit: (text: string) => void;
+    showFullSearchBar?: boolean;
+    disabled?: boolean;
+    isLoading?: boolean;
+    placeholder?: string;
+    value?: string;
+    onChange?: (text: string) => void;
+    /** Initial text in uncontrolled mode. Ignored when controlled. */
+    text?: string;
+}
+
+export default function SearchBarBase(props: SearchBarBaseProps) {
     const { showFullSearchBar, disabled, isLoading, placeholder, value, onChange } = props;
     const isControlled = value !== undefined && typeof onChange === 'function';
-    const [internalText, setInternalText] = useState(props.text || '');
-    const text = isControlled ? value : internalText;
-    const setText = isControlled ? onChange : setInternalText;
-    const onChangeText = (event) => {
+    const [internalText, setInternalText] = useState<string>(props.text || '');
+    const text = isControlled ? (value as string) : internalText;
+    const setText: (text: string) => void = isControlled ? (onChange as (text: string) => void) : setInternalText;
+    const onChangeText = (event: React.ChangeEvent<HTMLInputElement>) => {
         setText(event?.target?.value || '');
     };
-    const onSubmit = (event) => {
+    const onSubmit = (event: React.SyntheticEvent) => {
         event.preventDefault();
         props.onSubmit(text);
     };
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter') {
             onSubmit(event);
         }

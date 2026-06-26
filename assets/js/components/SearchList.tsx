@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import type { ListImperativeAPI } from 'react-window';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import ListSubheader from '@mui/material/ListSubheader';
@@ -11,25 +12,84 @@ import VideoListItem from './VideoListItem';
 import VideoExportPopper from './VideoExportPopper';
 import MobileOptionsPopper from './MobileOptionsPopper';
 import BookmarkPickerMenu from './BookmarkPickerMenu';
+import type { SearchResult, SubtitleWithVideo, TagsMap, Video, YouTubePlayer, LiveCurrentVideo } from '@/types';
+import type { Collection } from '@/utils/bookmarks';
 
-export default function SearchList(props) {
-    const { isLoading, isLoadingSubtitle, showTags, syncSubtitles, setSyncSubtitles, showMatchPreviews } = props;
-    const player = useRef(null);
-    const subtitleContainerRef = useRef(null);
-    const [open, setOpen] = useState(null);
+/**
+ * Snackbar payload returned from the page-level bookmark handlers.
+ * A handler may return null/undefined to indicate "no message" (e.g. when the
+ * operation was a no-op because the active collection wasn't set).
+ */
+export type BookmarkHandlerResult = { message: string } | null | undefined;
+
+interface CurrentVideoRef {
+    url: string;
+    i: number;
+}
+
+export interface SearchListProps {
+    isLoading: boolean;
+    isLoadingSubtitle: boolean;
+    showTags: boolean;
+    syncSubtitles: boolean;
+    setSyncSubtitles?: (next: boolean) => void;
+    showMatchPreviews: boolean;
+    searchResult?: SearchResult;
+    text?: string;
+    /** True in the /bookmarks page; suppresses pagination and tweaks copy. */
+    bookmarksMode?: boolean;
+    noMoreResultsToFetch?: boolean;
+    onFetchMoreResults: (node: HTMLElement | null) => void;
+    onFetchMoreSubtitles: (node: HTMLElement | null, i: number, url: string) => void;
+    fetchSubtitles: (i: number, url: string, fetchAll?: boolean) => unknown;
+    tags: TagsMap;
+    collections: Collection[];
+    lastUsedCollectionName?: string;
+    bookmarkedIdsByVideoUrl?: Map<string, Set<string>>;
+    bookmarkedCollectionIdsByItemId?: Map<string, Set<string>>;
+    /** Toggle bookmark on default collection. Omit to hide bookmark controls entirely. */
+    onBookmarkToggle?: (subtitle: SubtitleWithVideo) => BookmarkHandlerResult;
+    onOpenBookmarkPicker?: (subtitle: SubtitleWithVideo) => void;
+    /** Pick a specific collection from the picker. Omit to hide picker controls. */
+    onPickCollection?: (collection: Collection, subtitle: SubtitleWithVideo) => BookmarkHandlerResult;
+    /** Create a new collection from the picker. Omit to hide the picker's "new collection" affordance. */
+    onCreateCollection?: (name: string, subtitle: SubtitleWithVideo) => BookmarkHandlerResult;
+}
+
+export default function SearchList(props: SearchListProps) {
+    const {
+        isLoading,
+        isLoadingSubtitle,
+        showTags,
+        syncSubtitles,
+        setSyncSubtitles,
+        showMatchPreviews,
+        onBookmarkToggle,
+        onOpenBookmarkPicker,
+        onPickCollection,
+        onCreateCollection,
+        collections,
+        lastUsedCollectionName,
+        bookmarkedIdsByVideoUrl,
+        bookmarkedCollectionIdsByItemId
+    } = props;
+
+    const player = useRef<YouTubePlayer | null>(null);
+    const subtitleContainerRef = useRef<ListImperativeAPI | null>(null);
+    const [open, setOpen] = useState<string | null>(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [currentTime, setCurrentTime] = useState(null);
-    const [videoOptionsAnchorEl, setVideoOptionsAnchorEl] = useState(null);
-    const [mobileOptionsAnchorEl, setMobileOptionsAnchorEl] = useState(null);
-    const [hostEl, setHostEl] = useState(null);
-    const [currentVideo, setCurrentVideo] = useState(null);
-    const [popperSubtitle, setPopperSubtitle] = useState(null);
-    const [bookmarkPickerAnchorEl, setBookmarkPickerAnchorEl] = useState(null);
-    const [bookmarkPickerSubtitle, setBookmarkPickerSubtitle] = useState(null);
+    const [currentTime, setCurrentTime] = useState<number | null>(null);
+    const [videoOptionsAnchorEl, setVideoOptionsAnchorEl] = useState<HTMLElement | null>(null);
+    const [mobileOptionsAnchorEl, setMobileOptionsAnchorEl] = useState<HTMLElement | null>(null);
+    const [hostEl, setHostEl] = useState<HTMLElement | null>(null);
+    const [currentVideo, setCurrentVideo] = useState<CurrentVideoRef | null>(null);
+    const [popperSubtitle, setPopperSubtitle] = useState<SubtitleWithVideo | null>(null);
+    const [bookmarkPickerAnchorEl, setBookmarkPickerAnchorEl] = useState<HTMLElement | null>(null);
+    const [bookmarkPickerSubtitle, setBookmarkPickerSubtitle] = useState<SubtitleWithVideo | null>(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const [theatreMode, setTheatreMode] = useState(() => {
+    const [theatreMode, setTheatreMode] = useState<boolean>(() => {
         return localStorage.getItem('settings-theatreMode') === 'true';
     });
 
@@ -41,18 +101,7 @@ export default function SearchList(props) {
         });
     }, []);
 
-    const {
-        onBookmarkToggle,
-        onOpenBookmarkPicker,
-        onPickCollection,
-        onCreateCollection,
-        collections,
-        lastUsedCollectionName,
-        bookmarkedIdsByVideoUrl,
-        bookmarkedCollectionIdsByItemId
-    } = props;
-
-    const handleClickSubtitleListItem = useCallback((key, video, i) => {
+    const handleClickSubtitleListItem = useCallback((key: string, video: Video, i: number) => {
         if (open === key) {
             setOpen(null);
             setCurrentVideo(null);
@@ -62,7 +111,7 @@ export default function SearchList(props) {
         }
     }, [open]);
 
-    const handleClickMobileSubtitleOption = useCallback((event, subtitleData) => {
+    const handleClickMobileSubtitleOption = useCallback((event: React.MouseEvent<HTMLElement>, subtitleData: SubtitleWithVideo) => {
         if (mobileOptionsAnchorEl === event.currentTarget) {
             return;
         }
@@ -75,32 +124,32 @@ export default function SearchList(props) {
         setMobileOptionsAnchorEl(null);
     }, []);
 
-    const handleClickSubtitle = useCallback((startTime) => {
-        player.current.seekTo(startTime);
-    }, [player]);
+    const handleClickSubtitle = useCallback((startTime: number) => {
+        player.current?.seekTo(startTime);
+    }, []);
 
-    const showSnackbar = useCallback((message) => {
+    const showSnackbar = useCallback((message: string) => {
         setSnackbarMessage(message);
         setSnackbarOpen(true);
     }, []);
 
-    const handleClickCopy = useCallback((event, text) => {
+    const handleClickCopy = useCallback((event: React.MouseEvent<HTMLElement>, text: string) => {
         event.stopPropagation();
         navigator.clipboard.writeText(text);
         showSnackbar('Copied!')
     }, [showSnackbar]);
 
-    const toggleVideoOptions = useCallback((event) => {
-        setVideoOptionsAnchorEl(videoOptionsAnchorEl ? null : event.currentTarget);
-    }, [videoOptionsAnchorEl]);
+    const toggleVideoOptions = useCallback((event: React.MouseEvent<HTMLElement>) => {
+        setVideoOptionsAnchorEl(prev => prev ? null : event.currentTarget);
+    }, []);
 
-    const handleBookmarkToggle = useCallback((subtitleData) => {
+    const handleBookmarkToggle = useCallback((subtitleData: SubtitleWithVideo) => {
         if (!onBookmarkToggle) return;
         const result = onBookmarkToggle(subtitleData);
         if (result && result.message) showSnackbar(result.message);
     }, [onBookmarkToggle, showSnackbar]);
 
-    const handleOpenBookmarkPicker = useCallback((anchorEl, subtitleData) => {
+    const handleOpenBookmarkPicker = useCallback((anchorEl: HTMLElement, subtitleData: SubtitleWithVideo) => {
         setBookmarkPickerAnchorEl(anchorEl);
         setBookmarkPickerSubtitle(subtitleData);
         if (onOpenBookmarkPicker) onOpenBookmarkPicker(subtitleData);
@@ -111,13 +160,13 @@ export default function SearchList(props) {
         setBookmarkPickerSubtitle(null);
     }, []);
 
-    const handlePickCollection = useCallback((collection, subtitleData) => {
+    const handlePickCollection = useCallback((collection: Collection, subtitleData: SubtitleWithVideo | null) => {
         if (!onPickCollection || !subtitleData) return;
         const result = onPickCollection(collection, subtitleData);
         if (result && result.message) showSnackbar(result.message);
     }, [onPickCollection, showSnackbar]);
 
-    const handleCreateCollection = useCallback((name, subtitleData) => {
+    const handleCreateCollection = useCallback((name: string, subtitleData: SubtitleWithVideo | null) => {
         if (!onCreateCollection || !subtitleData) return;
         try {
             const result = onCreateCollection(name, subtitleData);
@@ -128,23 +177,25 @@ export default function SearchList(props) {
     }, [onCreateCollection, showSnackbar]);
 
     useEffect(() => {
-        let interval;
+        let interval: ReturnType<typeof setInterval> | undefined;
         if (syncSubtitles && player.current) {
             interval = setInterval(() => {
-                const currentTime = player.current.getCurrentTime();
-                setCurrentTime(Math.floor(currentTime));
+                const t = player.current?.getCurrentTime();
+                if (t !== undefined) setCurrentTime(Math.floor(t));
             }, 1000);
         } else {
             setCurrentTime(null);
         }
-        return () => clearInterval(interval);
+        return () => {
+            if (interval !== undefined) clearInterval(interval);
+        };
     }, [syncSubtitles, player.current]);
 
-    const _onReady = useCallback((event) => {
+    const _onReady = useCallback((event: { target: YouTubePlayer }) => {
         player.current = event.target;
     }, []);
 
-    let searchResultText;
+    let searchResultText: string;
     if (props.bookmarksMode) {
         searchResultText = `Displaying ${props.searchResult?.length || 0} bookmarked video${(props.searchResult?.length || 0) === 1 ? '' : 's'}.`;
     } else if (!props.text) {
@@ -159,10 +210,10 @@ export default function SearchList(props) {
         `Displaying results from ${props.searchResult.length} video${props.searchResult.length > 1 ? 's' : ''} for "${props.text}"...`;
     }
 
-    const liveCurrentVideo = useMemo(() => {
+    const liveCurrentVideo = useMemo<LiveCurrentVideo | null>(() => {
         if (!currentVideo) return null;
         const idx = props.searchResult?.findIndex(v => v.url === currentVideo.url);
-        if (idx === undefined || idx < 0) return null;
+        if (idx === undefined || idx < 0 || !props.searchResult) return null;
         return { video: props.searchResult[idx], i: idx };
     }, [currentVideo, props.searchResult]);
 
@@ -174,8 +225,8 @@ export default function SearchList(props) {
     }, [currentVideo, liveCurrentVideo]);
 
     const currentVideoBookmarkedIds = useMemo(() => {
-        if (!liveCurrentVideo || !bookmarkedIdsByVideoUrl) return new Set();
-        return bookmarkedIdsByVideoUrl.get(liveCurrentVideo.video.url) || new Set();
+        if (!liveCurrentVideo || !bookmarkedIdsByVideoUrl) return new Set<string>();
+        return bookmarkedIdsByVideoUrl.get(liveCurrentVideo.video.url) || new Set<string>();
     }, [liveCurrentVideo, bookmarkedIdsByVideoUrl]);
 
     return (

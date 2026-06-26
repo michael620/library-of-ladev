@@ -2,8 +2,16 @@ import { memo } from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
+import type { CSSProperties, ReactElement } from 'react';
+import type { Match } from '@/types';
 
-const MatchListItem = memo(function MatchListItem(props) {
+export interface MatchListItemRowProps {
+    matches: Match[];
+}
+
+type MatchListItemProps = MatchListItemRowProps & { index: number; style?: CSSProperties };
+
+const MatchListItem = memo(function MatchListItem(props: MatchListItemProps): ReactElement {
     const { index, matches } = props;
     const text = matches[index].text;
     return (

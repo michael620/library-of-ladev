@@ -15,8 +15,29 @@ import Paper from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import YouTube from 'react-youtube';
+import type { Video, TagsMap, YouTubePlayer } from '@/types';
 
-const VideoListItem = memo(function VideoListItem(props) {
+export interface VideoListItemProps {
+    video: Video;
+    /** url of the currently-expanded video, or null. */
+    open: string | null;
+    onCollapseVideoListItem: () => void;
+    handleClickSubtitleListItem: (key: string, video: Video, i: number) => void;
+    i: number;
+    showTags: boolean;
+    showMatchPreviews: boolean;
+    toggleVideoOptions: (event: React.MouseEvent<HTMLElement>) => void;
+    _onReady: (event: { target: YouTubePlayer }) => void;
+    text?: string;
+    tags: TagsMap;
+    onFetchMoreSubtitles: (node: HTMLElement | null, i: number, url: string) => void;
+    setHostEl: (el: HTMLElement | null) => void;
+    isMobile: boolean;
+    /** undefined when the row isn't open; otherwise the persisted theatre preference. */
+    theatreMode?: boolean;
+}
+
+const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
     const {
         video,
         open,
@@ -32,10 +53,10 @@ const VideoListItem = memo(function VideoListItem(props) {
         theatreMode
     } = props;
     const { url, title, date, total, subtitles } = video;
-    const ref = useRef(null);
-    const playerRef = useRef(null);
-    const prevTheatreRef = useRef(null);
-    const [playerReady, setPlayerReady] = useState(false);
+    const ref = useRef<HTMLDivElement | null>(null);
+    const playerRef = useRef<HTMLDivElement | null>(null);
+    const prevTheatreRef = useRef<boolean | null>(null);
+    const [playerReady, setPlayerReady] = useState<boolean>(false);
     const isOpen = open === url;
     const effectiveTheatre = !!theatreMode && !isMobile;
     const theme = useTheme();
@@ -60,7 +81,7 @@ const VideoListItem = memo(function VideoListItem(props) {
         }
         prevTheatreRef.current = isOpen ? effectiveTheatre : null;
     }, [isOpen, effectiveTheatre, theme.transitions.duration.standard]);
-    let numMatches;
+    let numMatches: number | undefined;
     if (!props.text) {
         numMatches = undefined;
     } else if (subtitles) {
@@ -68,7 +89,7 @@ const VideoListItem = memo(function VideoListItem(props) {
     } else if (video.matches) {
         numMatches = video.matches.length;
     }
-    const stopPropagation = (e) => e.stopPropagation();
+    const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
     return (
         <ListItem key={url} disablePadding sx={{ display: 'block', scrollMarginTop: 64 }}>
         <ListItemButton onClick={() => handleClickSubtitleListItem(url, video, i)}>

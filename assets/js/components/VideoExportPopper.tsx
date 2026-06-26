@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MutableRefObject } from 'react';
 import Popper from '@mui/material/Popper';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -20,9 +20,28 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CloseIcon from '@mui/icons-material/Close';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
+import type { Dayjs } from 'dayjs';
 import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
+import type { LiveCurrentVideo, YouTubePlayer } from '@/types';
 
-export default function VideoExportPopper(props) {
+export interface VideoExportPopperProps {
+    anchorEl: HTMLElement | null;
+    onClose?: () => void;
+    liveCurrentVideo: LiveCurrentVideo | null;
+    player: MutableRefObject<YouTubePlayer | null>;
+    /** True on the /bookmarks page — disables "Load all subtitles". */
+    bookmarksMode?: boolean;
+    isLoadingSubtitle: boolean;
+    fetchSubtitles: (i: number, url: string, fetchAll?: boolean) => unknown;
+    onError?: (message: string) => void;
+    isMobile: boolean;
+    theatreMode: boolean;
+    toggleTheatreMode: () => void;
+    syncSubtitles: boolean;
+    setSyncSubtitles?: (next: boolean) => void;
+}
+
+export default function VideoExportPopper(props: VideoExportPopperProps) {
     const {
         anchorEl,
         onClose,
@@ -38,11 +57,11 @@ export default function VideoExportPopper(props) {
         syncSubtitles,
         setSyncSubtitles
     } = props;
-    const [startTime, setStartTime] = useState(timeStrToDayJs('00:00:00'));
-    const [endTime, setEndTime] = useState(timeStrToDayJs('00:00:00'));
-    const [includeTimestamp, setIncludeTimestamp] = useState(false);
-    const [maxTime, setMaxTime] = useState(null);
-    const [isLoadingDownloadText, setIsLoadingDownloadText] = useState(false);
+    const [startTime, setStartTime] = useState<Dayjs | null>(timeStrToDayJs('00:00:00'));
+    const [endTime, setEndTime] = useState<Dayjs | null>(timeStrToDayJs('00:00:00'));
+    const [includeTimestamp, setIncludeTimestamp] = useState<boolean>(false);
+    const [maxTime, setMaxTime] = useState<Dayjs | null>(null);
+    const [isLoadingDownloadText, setIsLoadingDownloadText] = useState<boolean>(false);
 
     useEffect(() => {
         if (player.current) {
@@ -56,14 +75,15 @@ export default function VideoExportPopper(props) {
         if (onClose) onClose();
     };
 
-    const onPopperKeyDown = (event) => {
+    const onPopperKeyDown = (event: React.KeyboardEvent) => {
         if (event.key === 'Escape') {
             close();
         }
     };
 
     const handleToggleSyncSubtitles = () => {
-        localStorage.setItem('settings-syncSubtitles', !syncSubtitles);
+        if (!setSyncSubtitles) return;
+        localStorage.setItem('settings-syncSubtitles', String(!syncSubtitles));
         setSyncSubtitles(!syncSubtitles);
     };
 
@@ -73,7 +93,7 @@ export default function VideoExportPopper(props) {
     };
 
     const handleExportTranscript = async () => {
-        if (!liveCurrentVideo) return;
+        if (!liveCurrentVideo || !startTime || !endTime) return;
         const videoUrl = liveCurrentVideo.video.url;
         try {
             setIsLoadingDownloadText(true);
@@ -163,7 +183,7 @@ export default function VideoExportPopper(props) {
                                     views={['hours', 'minutes', 'seconds']}
                                     format='HH:mm:ss'
                                     skipDisabled={true}
-                                    maxTime={maxTime}
+                                    maxTime={maxTime ?? undefined}
                                     ampm={false}
                                     viewRenderers={{
                                         hours: renderMultiSectionDigitalClockTimeView,
@@ -181,7 +201,7 @@ export default function VideoExportPopper(props) {
                                     views={['hours', 'minutes', 'seconds']}
                                     format='HH:mm:ss'
                                     skipDisabled={true}
-                                    maxTime={maxTime}
+                                    maxTime={maxTime ?? undefined}
                                     ampm={false}
                                     viewRenderers={{
                                         hours: renderMultiSectionDigitalClockTimeView,
@@ -199,7 +219,7 @@ export default function VideoExportPopper(props) {
                                     control={<Switch/>}
                                     checked={includeTimestamp}
                                     label={'Include timestamp'}
-                                    onChange={(event) => setIncludeTimestamp(event.target.checked)}
+                                    onChange={(event) => setIncludeTimestamp((event.target as HTMLInputElement).checked)}
                                 />
                             </Box>
                         </AccordionDetails>

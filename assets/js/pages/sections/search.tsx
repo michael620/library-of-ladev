@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import NewAppLayout from '@/layouts/NewAppLayout.jsx';
+import { useEffect, useState, useRef, useCallback, useMemo, type ReactNode } from 'react';
+import NewAppLayout from '@/layouts/NewAppLayout';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
-import SearchList from '@/components/SearchList.jsx';
-import SearchBar from '@/components/SearchBar.jsx';
+import SearchList from '@/components/SearchList';
+import SearchBar from '@/components/SearchBar';
 import { Head, router } from '@inertiajs/react';
+import type { FormDataConvertible } from '@inertiajs/core';
 import { FETCH_TYPE } from '../../../../shared/constants';
 import Alert from '@mui/material/Alert';
 import {
@@ -19,22 +20,41 @@ import {
     getCollectionById,
     createCollection
 } from '@/utils/bookmarks';
+import type { Collection, ItemsMap } from '@/utils/bookmarks';
+import type { SearchParams, SearchResult, Subtitle, SubtitleWithVideo, TagsMap } from '@/types';
 
-Search.layout = (page) => <NewAppLayout>{page}</NewAppLayout>
-export default function Search(props) {
-    const [isLoading, setIsLoading] = useState(false);
-    const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);
-    const [searchResult, setSearchResult] = useState(props.searchResult);
-    const [subtitleResult, setSubtitleResult] = useState(null);
-    const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState(props.noMoreResultsToFetch);
-    const [showTags, setShowTags] = useState(localStorage.getItem('settings-showTags') === 'true');
-    const [syncSubtitles, setSyncSubtitles] = useState(localStorage.getItem('settings-syncSubtitles') === 'true');
-    const [showMatchPreviews, setShowMatchPreviews] = useState(localStorage.getItem('settings-showMatchPreviews') === 'true');
-    const [collections, setCollections] = useState([]);
-    const [lastUsedId, setLastUsedId] = useState(null);
-    const [items, setItems] = useState({});
-    const observer = useRef(null);
-    const observerSubtitle = useRef(null);
+export interface SearchPageProps {
+    searchParams: SearchParams;
+    tags: TagsMap;
+    searchResult?: SearchResult;
+    subtitleResult?: Subtitle[];
+    allSubtitlesFetched?: boolean;
+    noMoreResultsToFetch?: boolean;
+    fatalError?: string;
+}
+
+interface SubtitleResultState {
+    subtitles: Subtitle[];
+    allSubtitlesFetched?: boolean;
+    i: number;
+}
+
+Search.layout = (page: ReactNode) => <NewAppLayout>{page}</NewAppLayout>
+
+export default function Search(props: SearchPageProps) {
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isLoadingSubtitle, setIsLoadingSubtitle] = useState<boolean>(false);
+    const [searchResult, setSearchResult] = useState<SearchResult | undefined>(props.searchResult);
+    const [subtitleResult, setSubtitleResult] = useState<SubtitleResultState | null>(null);
+    const [noMoreResultsToFetch, setNoMoreResultsToFetch] = useState<boolean | undefined>(props.noMoreResultsToFetch);
+    const [showTags, setShowTags] = useState<boolean>(localStorage.getItem('settings-showTags') === 'true');
+    const [syncSubtitles, setSyncSubtitles] = useState<boolean>(localStorage.getItem('settings-syncSubtitles') === 'true');
+    const [showMatchPreviews, setShowMatchPreviews] = useState<boolean>(localStorage.getItem('settings-showMatchPreviews') === 'true');
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [lastUsedId, setLastUsedId] = useState<string | null>(null);
+    const [items, setItems] = useState<ItemsMap>({});
+    const observer = useRef<IntersectionObserver | null>(null);
+    const observerSubtitle = useRef<IntersectionObserver | null>(null);
 
     useEffect(() => {
         const id = ensureDefaultCollection();
@@ -53,12 +73,12 @@ export default function Search(props) {
     const lastUsedCollectionName = lastUsedCollection?.name;
 
     const bookmarkedIdsByVideoUrl = useMemo(() => {
-        const map = new Map();
+        const map = new Map<string, Set<string>>();
         if (!lastUsedCollection) return map;
         for (const itemId of lastUsedCollection.bookmarkIds) {
             const item = items[itemId];
             if (!item) continue;
-            const set = map.get(item.videoUrl) || new Set();
+            const set = map.get(item.videoUrl) || new Set<string>();
             set.add(itemId);
             map.set(item.videoUrl, set);
         }
@@ -66,10 +86,10 @@ export default function Search(props) {
     }, [lastUsedCollection, items]);
 
     const bookmarkedCollectionIdsByItemId = useMemo(() => {
-        const map = new Map();
+        const map = new Map<string, Set<string>>();
         for (const c of collections) {
             for (const id of c.bookmarkIds) {
-                const set = map.get(id) || new Set();
+                const set = map.get(id) || new Set<string>();
                 set.add(c.id);
                 map.set(id, set);
             }
@@ -77,7 +97,7 @@ export default function Search(props) {
         return map;
     }, [collections]);
 
-    const handleBookmarkToggle = useCallback((subtitleData) => {
+    const handleBookmarkToggle = useCallback((subtitleData: SubtitleWithVideo) => {
         const id = ensureDefaultCollection();
         const itemId = String(subtitleData.subtitleId);
         const target = getCollectionById(id);
@@ -96,7 +116,7 @@ export default function Search(props) {
         return { message: `Saved to ${targetName}` };
     }, [refreshBookmarkState]);
 
-    const handlePickCollection = useCallback((collection, subtitleData) => {
+    const handlePickCollection = useCallback((collection: Collection, subtitleData: SubtitleWithVideo) => {
         const itemId = String(subtitleData.subtitleId);
         if (isInCollection(collection.id, itemId)) {
             removeFromCollection(collection.id, itemId);
@@ -114,7 +134,7 @@ export default function Search(props) {
         return { message: `Saved to ${collection.name}` };
     }, [refreshBookmarkState]);
 
-    const handleCreateCollection = useCallback((name, subtitleData) => {
+    const handleCreateCollection = useCallback((name: string, subtitleData: SubtitleWithVideo) => {
         const collection = createCollection(name);
         addToCollection(collection.id, {
             subtitleId: subtitleData.subtitleId,
@@ -128,30 +148,32 @@ export default function Search(props) {
 
 
     const fetchMoreResults = async () => {
-        if (noMoreResultsToFetch || isLoading) return;
+        if (noMoreResultsToFetch || isLoading || !searchResult) return;
         setIsLoading(true);
-        let fetchType = props.searchParams?.isFullTextSearch ? FETCH_TYPE.PAGE_FTS : FETCH_TYPE.PAGE;
+        const fetchType: string = props.searchParams?.isFullTextSearch ? FETCH_TYPE.PAGE_FTS : FETCH_TYPE.PAGE;
+        const data: Record<string, FormDataConvertible> = {
+            text: props.searchParams?.text,
+            isFullTextSearch: props.searchParams?.isFullTextSearch,
+            title: props.searchParams?.title,
+            isAscending: props.searchParams?.isAscending,
+            startDate: props.searchParams?.startDate,
+            endDate: props.searchParams?.endDate,
+            includeTags: props.searchParams?.includeTags,
+            excludeTags: props.searchParams?.excludeTags,
+            fetchType,
+            lastFtsIndex: fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : undefined,
+            lastUrl: fetchType === FETCH_TYPE.PAGE ? searchResult[searchResult.length - 1].url : undefined,
+        };
         router.visit('/search', {
-            data: {
-                text: props.searchParams?.text,
-                isFullTextSearch: props.searchParams?.isFullTextSearch,
-                title: props.searchParams?.title,
-                isAscending: props.searchParams?.isAscending,
-                startDate: props.searchParams?.startDate,
-                endDate: props.searchParams?.endDate,
-                includeTags: props.searchParams?.includeTags,
-                excludeTags: props.searchParams?.excludeTags,
-                fetchType,
-                lastFtsIndex: fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : undefined,
-                lastUrl: fetchType === FETCH_TYPE.PAGE ? searchResult[searchResult.length - 1].url : undefined,
-            },
+            data,
             preserveState: true,
             preserveScroll: true,
             preserveUrl: true,
             onSuccess: (response) => {
-                const mergedResults = [...searchResult, ...response.props.searchResult];
+                const responseProps = response.props as unknown as SearchPageProps;
+                const mergedResults = [...searchResult, ...(responseProps.searchResult || [])];
                 setSearchResult(mergedResults);
-                if (response.props.noMoreResultsToFetch) {
+                if (responseProps.noMoreResultsToFetch) {
                     setNoMoreResultsToFetch(true);
                 }
                 setIsLoading(false);
@@ -159,10 +181,10 @@ export default function Search(props) {
         });
     };
 
-    const fetchSubtitles = async (i, url, fetchAll) => {
+    const fetchSubtitles = async (i: number, url: string, fetchAll?: boolean) => {
         if (isLoadingSubtitle) return;
         setIsLoadingSubtitle(true);
-        const data = {
+        const data: Record<string, FormDataConvertible> = {
             fetchType: FETCH_TYPE.SUBTITLE,
             videoUrl: url,
             text: props.searchParams?.text,
@@ -180,10 +202,11 @@ export default function Search(props) {
             preserveScroll: true,
             preserveUrl: true,
             onSuccess: (response) => {
-                if (response.props.subtitleResult) {
+                const responseProps = response.props as unknown as SearchPageProps;
+                if (responseProps.subtitleResult) {
                     setSubtitleResult({
-                        subtitles: response.props.subtitleResult,
-                        allSubtitlesFetched: response.props.allSubtitlesFetched,
+                        subtitles: responseProps.subtitleResult,
+                        allSubtitlesFetched: responseProps.allSubtitlesFetched,
                         i
                     });
                 }
@@ -192,8 +215,8 @@ export default function Search(props) {
     };
 
     useEffect(() => {
-        if (!subtitleResult) return;
-        if (subtitleResult.subtitles && (subtitleResult?.i <= searchResult?.length || 0)) {
+        if (!subtitleResult || !searchResult) return;
+        if (subtitleResult.subtitles && (subtitleResult.i <= (searchResult.length || 0))) {
             const newResults = [...searchResult];
             newResults[subtitleResult.i].subtitles = subtitleResult.subtitles;
             newResults[subtitleResult.i].noMoreSubtitlesToFetch = true;
@@ -207,7 +230,7 @@ export default function Search(props) {
     }, [subtitleResult]);
 
     const onFetchMoreResults = useCallback(
-        (node) => {
+        (node: HTMLElement | null) => {
             if (!node || isLoading) return;
             if (observer.current) observer.current.disconnect();
             observer.current = new IntersectionObserver((entries) => {
@@ -221,7 +244,7 @@ export default function Search(props) {
     );
 
     const onFetchMoreSubtitles = useCallback(
-        (node, i, url) => {
+        (node: HTMLElement | null, i: number, url: string) => {
             if (!node || isLoadingSubtitle) return;
             if (observerSubtitle.current) observerSubtitle.current.disconnect();
             observerSubtitle.current = new IntersectionObserver((entries) => {

@@ -1,7 +1,3 @@
-/**
- * Types describing the JSON shapes the Sails controllers return to the React frontend.
- */
-
 export interface Subtitle {
     subtitleId: number;
     startTime: number;
@@ -31,7 +27,12 @@ export type SearchResult = Video[];
 
 export interface TagDescriptor {
     text: string;
-    color: 'primary' | 'secondary' | 'info' | 'default' | 'error' | 'success' | 'warning';
+    /**
+     * One of the named MUI palette keys that this app's theme actually maps. Excludes
+     * `'default'` deliberately — the Chip background lookup `theme.palette[color][mode]`
+     * has no entry for `default`, so allowing it would silently render undefined.
+     */
+    color: 'primary' | 'secondary' | 'info' | 'error' | 'success' | 'warning';
     order: number;
 }
 
@@ -47,8 +48,6 @@ export interface SearchParams {
     includeTags?: string[];
     excludeTags?: string[];
 }
-
-export type BookmarksSort = 'recency' | 'dateAsc' | 'dateDesc';
 
 export interface FallbackCandidate {
     subtitleId: number;

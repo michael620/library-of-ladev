@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import NewAppLayout from '@/layouts/NewAppLayout.jsx';
+import NewAppLayout from '@/layouts/NewAppLayout';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -33,7 +33,7 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import { Head, router } from '@inertiajs/react';
 import { formatSeconds } from '../../../../shared/constants';
-import SearchList from '@/components/SearchList.jsx';
+import SearchList from '@/components/SearchList';
 import {
     getCollections,
     getItems,
@@ -61,17 +61,18 @@ import type {
     BookmarkItem,
     BackupView
 } from '@/utils/bookmarks';
-import type { BookmarksPageProps, FallbackCandidate } from '@/types';
+import type { BookmarksSort, FallbackCandidate, SearchResult, SubtitleWithVideo, TagsMap } from '@/types';
+
+export interface BookmarksPageProps {
+    tags: TagsMap;
+    sort: BookmarksSort;
+    searchResult: SearchResult;
+    unresolvedIds: number[];
+    noMoreResultsToFetch?: boolean;
+    fatalError?: string;
+}
 
 type ActiveBackupView = BackupView & { filename: string };
-
-interface SubtitleData {
-    subtitleId: number;
-    videoUrl: string;
-    startTime: number;
-    text?: string;
-    timestamp?: string;
-}
 
 Bookmarks.layout = (page: React.ReactNode) => <NewAppLayout>{page}</NewAppLayout>
 
@@ -81,7 +82,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
     const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
     const [sort, setSort] = useState<BookmarksPageProps['sort']>('recency');
     const [showTags] = useState<boolean>(localStorage.getItem('settings-showTags') === 'true');
-    const [syncSubtitles] = useState<boolean>(localStorage.getItem('settings-syncSubtitles') === 'true');
+    const [syncSubtitles, setSyncSubtitles] = useState<boolean>(localStorage.getItem('settings-syncSubtitles') === 'true');
     const [showMatchPreviews] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -187,7 +188,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
     }, [props.unresolvedIds, collectionItems]);
 
     const candidatesByPair = useMemo(() => {
-        const map = new Map();
+        const map = new Map<string, FallbackCandidate[]>();
         for (const c of candidates) {
             const key = `${c.videoUrl}@${c.startTime}`;
             const arr = map.get(key) || [];
@@ -248,7 +249,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
         showSnackbar('Collection deleted');
     };
 
-    const downloadJson = (filename, payload) => {
+    const downloadJson = (filename: string, payload: unknown) => {
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -371,7 +372,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
         showSnackbar('Removed from this collection');
     };
 
-    const handleBookmarkToggle = useCallback((subtitleData: SubtitleData) => {
+    const handleBookmarkToggle = useCallback((subtitleData: SubtitleWithVideo) => {
         if (!activeCollectionId) return null;
         const itemId = String(subtitleData.subtitleId);
         const collection = getCollectionById(activeCollectionId);
@@ -391,7 +392,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
         return { message: `Saved to ${collectionName}` };
     }, [activeCollectionId, refreshLocal, fetchBookmarks]);
 
-    const handlePickCollection = useCallback((collection: Collection, subtitleData: SubtitleData) => {
+    const handlePickCollection = useCallback((collection: Collection, subtitleData: SubtitleWithVideo) => {
         const itemId = String(subtitleData.subtitleId);
         const allCollections = getCollections();
         const currentMembership = new Set<string>();
@@ -413,7 +414,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
         return { message: currentMembership.has(collection.id) ? `Saved to ${collection.name}` : `Removed from ${collection.name}` };
     }, [items, refreshLocal, fetchBookmarks]);
 
-    const handleCreateCollection = useCallback((name: string, subtitleData: SubtitleData) => {
+    const handleCreateCollection = useCallback((name: string, subtitleData: SubtitleWithVideo) => {
         const created = createCollection(name);
         addToCollection(created.id, {
             subtitleId: subtitleData.subtitleId,
@@ -574,7 +575,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
                                                 </IconButton>
                                             </Box>
                                             {matches.map((c) => {
-                                                const isBookmarked = isInCollection(activeCollectionId, String(c.subtitleId));
+                                                const isBookmarked = !!activeCollectionId && isInCollection(activeCollectionId, String(c.subtitleId));
                                                 return (
                                                     <Box key={c.subtitleId} sx={{ pl: 2, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                                                         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -616,6 +617,7 @@ export default function Bookmarks(props: BookmarksPageProps) {
                     fetchSubtitles={noOp}
                     isLoadingSubtitle={false}
                     syncSubtitles={syncSubtitles}
+                    setSyncSubtitles={setSyncSubtitles}
                     tags={props.tags}
                     collections={isBackupView ? [] : collections}
                     lastUsedCollectionName={isBackupView ? undefined : activeCollection?.name}
