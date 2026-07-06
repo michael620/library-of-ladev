@@ -35,14 +35,14 @@ module.exports.mail = {
    */
   mailers: {
     smtp: {
-      transport: 'smtp'
+      transport: 'smtp',
     },
     log: {
-      transport: 'log'
+      transport: 'log',
     },
     nodemailer: {
-      transport: 'smtp'
-    }
+      transport: 'smtp',
+    },
   },
   /**
    * Global "From" Address
@@ -55,6 +55,6 @@ module.exports.mail = {
    */
   from: {
     address: 'boring@sailscasts.com',
-    name: 'The Boring JavaScript Stack'
-  }
-}
+    name: 'The Boring JavaScript Stack',
+  },
+};

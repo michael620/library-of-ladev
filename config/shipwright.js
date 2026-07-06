@@ -1,6 +1,6 @@
-const { pluginReact } = require('@rsbuild/plugin-react')
+const { pluginReact } = require('@rsbuild/plugin-react');
 module.exports.shipwright = {
   build: {
-    plugins: [pluginReact()]
-  }
-}
+    plugins: [pluginReact()],
+  },
+};

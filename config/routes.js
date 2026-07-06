@@ -34,8 +34,6 @@ module.exports.routes = {
   'PUT /admin/api/videos/:url': 'admin/save-video',
 
   'GET /docs/swagger.json': async function (_req, res) {
-    return res.sendFile(
-      require('path').resolve(__dirname, '../assets/docs/swagger.json')
-    );
+    return res.sendFile(require('path').resolve(__dirname, '../assets/docs/swagger.json'));
   },
-}
+};

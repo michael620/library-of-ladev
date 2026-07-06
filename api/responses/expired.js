@@ -21,7 +21,7 @@
  * ```
  */
 module.exports = function expired() {
-  sails.log.verbose('Ran custom response: res.expired()')
+  sails.log.verbose('Ran custom response: res.expired()');
 
-  return this.res.status(400).redirect('/link-expired')
-}
+  return this.res.status(400).redirect('/link-expired');
+};

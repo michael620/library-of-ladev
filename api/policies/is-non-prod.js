@@ -1,6 +1,6 @@
 module.exports = function (req, res, proceed) {
   if (process.env.NODE_ENV !== 'production') {
-    return proceed()
+    return proceed();
   }
-  return res.notFound()
-}
+  return res.notFound();
+};
