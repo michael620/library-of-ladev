@@ -54,6 +54,8 @@ export interface SearchListProps {
     onPickCollection?: (collection: Collection, subtitle: SubtitleWithVideo) => BookmarkHandlerResult;
     /** Create a new collection from the picker. Omit to hide the picker's "new collection" affordance. */
     onCreateCollection?: (name: string, subtitle: SubtitleWithVideo) => BookmarkHandlerResult;
+    isAdmin?: boolean;
+    onClickEdit?: (video: Video) => void;
 }
 
 export default function SearchList(props: SearchListProps) {
@@ -260,7 +262,9 @@ export default function SearchList(props: SearchListProps) {
                         onFetchMoreSubtitles: props.onFetchMoreSubtitles,
                         setHostEl,
                         isMobile,
-                        theatreMode: open === video.url ? theatreMode : undefined
+                        theatreMode: open === video.url ? theatreMode : undefined,
+                        isAdmin: props.isAdmin,
+                        onClickEdit: props.onClickEdit
                     }}
                 />
             })}
