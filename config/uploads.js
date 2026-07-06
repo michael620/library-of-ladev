@@ -2,5 +2,5 @@
  * (sails.config.uploads)
  */
 module.exports.uploads = {
-    adapter: require('skipper-disk')
-}
+  adapter: require('skipper-disk'),
+};

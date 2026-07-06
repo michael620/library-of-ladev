@@ -14,16 +14,16 @@ module.exports = {
     videoUrl: { type: 'string' },
     lastUrl: { type: 'string' },
     lastFtsIndex: { type: 'number' },
-    fetchAll: { type: 'boolean' }
+    fetchAll: { type: 'boolean' },
   },
   exits: {
-    success: { responseType: 'inertia' }
+    success: { responseType: 'inertia' },
   },
   fn: async function (inputs) {
-    const searchAction = require('../sections/search')
-    const result = await searchAction.fn.call(this, inputs)
-    result.props = result.props || {}
-    result.props.isAdmin = true
-    return result
-  }
-}
+    const searchAction = require('../sections/search');
+    const result = await searchAction.fn.call(this, inputs);
+    result.props = result.props || {};
+    result.props.isAdmin = true;
+    return result;
+  },
+};

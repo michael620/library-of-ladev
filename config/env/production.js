@@ -46,7 +46,7 @@ module.exports = {
     default: {
       adapter: 'sails-postgresql',
       url: process.env.DATABASE_URL,
-    }
+    },
     //--------------------------------------------------------------------------
     //  /\   To avoid checking it in to version control, you might opt to set
     //  ||   sensitive credentials like `url` using an environment variable.
@@ -69,7 +69,7 @@ module.exports = {
      * http://sailsjs.com/docs/concepts/models-and-orm/model-settings#?migrate *
      *                                                                         *
      ***************************************************************************/
-    migrate: 'safe'
+    migrate: 'safe',
   },
 
   /**************************************************************************
@@ -80,7 +80,7 @@ module.exports = {
    *                                                                         *
    ***************************************************************************/
   blueprints: {
-    shortcuts: false
+    shortcuts: false,
     // actions: false,
     // rest: false,
   },
@@ -112,7 +112,7 @@ module.exports = {
       // allowOrigins: [
       //   'https://example.com',
       // ]
-    }
+    },
   },
 
   /***************************************************************************
@@ -176,8 +176,8 @@ module.exports = {
      ***************************************************************************/
     cookie: {
       secure: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
   },
 
   /**************************************************************************
@@ -201,15 +201,15 @@ module.exports = {
      *                                                                          *
      ***************************************************************************/
     onlyAllowOrigins: [
-    //   'http://localhost:1337',
+      //   'http://localhost:1337',
       `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`,
-    ]
+    ],
     // beforeConnect: function(handshake, proceed) {
 
     //   // Send back `true` to allow the socket to connect.
     //   // (Or send back `false` to reject the attempt.)
     //   return proceed(undefined, false);
-    
+
     // },
 
     /***************************************************************************
@@ -242,7 +242,7 @@ module.exports = {
    *                                                                         *
    ***************************************************************************/
   log: {
-    level: 'debug'
+    level: 'debug',
   },
 
   http: {
@@ -322,5 +322,5 @@ module.exports = {
     // sails_custom__stripeSecret=sk_prod__fake_Nfgh82401348jaDa3lkZ0d9Hm
     // ```
     //--------------------------------------------------------------------------
-  }
-}
+  },
+};

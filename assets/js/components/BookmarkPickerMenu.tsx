@@ -13,94 +13,101 @@ import type { Collection } from '@/utils/bookmarks';
 import type { SubtitleWithVideo } from '@/types';
 
 export interface BookmarkPickerMenuProps {
-    anchorEl: HTMLElement | null;
-    subtitle: SubtitleWithVideo | null;
-    collections?: Collection[];
-    bookmarkedCollectionIdsByItemId?: Map<string, Set<string>>;
-    onClose: () => void;
-    onPickCollection: (collection: Collection, subtitle: SubtitleWithVideo | null) => void;
-    onCreateCollection: (name: string, subtitle: SubtitleWithVideo | null) => void;
+  anchorEl: HTMLElement | null;
+  subtitle: SubtitleWithVideo | null;
+  collections?: Collection[];
+  bookmarkedCollectionIdsByItemId?: Map<string, Set<string>>;
+  onClose: () => void;
+  onPickCollection: (collection: Collection, subtitle: SubtitleWithVideo | null) => void;
+  onCreateCollection: (name: string, subtitle: SubtitleWithVideo | null) => void;
 }
 
 export default function BookmarkPickerMenu(props: BookmarkPickerMenuProps) {
-    const {
-        anchorEl,
-        subtitle,
-        collections,
-        bookmarkedCollectionIdsByItemId,
-        onClose,
-        onPickCollection,
-        onCreateCollection
-    } = props;
-    const [newCollectionMode, setNewCollectionMode] = useState<boolean>(false);
-    const [newCollectionName, setNewCollectionName] = useState<string>('');
+  const {
+    anchorEl,
+    subtitle,
+    collections,
+    bookmarkedCollectionIdsByItemId,
+    onClose,
+    onPickCollection,
+    onCreateCollection,
+  } = props;
+  const [newCollectionMode, setNewCollectionMode] = useState<boolean>(false);
+  const [newCollectionName, setNewCollectionName] = useState<string>('');
 
-    const handleClose = () => {
-        setNewCollectionMode(false);
-        setNewCollectionName('');
-        onClose();
-    };
+  const handleClose = () => {
+    setNewCollectionMode(false);
+    setNewCollectionName('');
+    onClose();
+  };
 
-    const handlePick = (collection: Collection) => {
-        onPickCollection(collection, subtitle);
-        handleClose();
-    };
+  const handlePick = (collection: Collection) => {
+    onPickCollection(collection, subtitle);
+    handleClose();
+  };
 
-    const handleCreate = () => {
-        const trimmed = newCollectionName.trim();
-        if (!trimmed) return;
-        onCreateCollection(trimmed, subtitle);
-        handleClose();
-    };
+  const handleCreate = () => {
+    const trimmed = newCollectionName.trim();
+    if (!trimmed) return;
+    onCreateCollection(trimmed, subtitle);
+    handleClose();
+  };
 
-    const itemId = subtitle ? String(subtitle.subtitleId) : null;
-    const itemCollectionIds = itemId && bookmarkedCollectionIdsByItemId
-        ? bookmarkedCollectionIdsByItemId.get(itemId) || new Set<string>()
-        : new Set<string>();
+  const itemId = subtitle ? String(subtitle.subtitleId) : null;
+  const itemCollectionIds =
+    itemId && bookmarkedCollectionIdsByItemId
+      ? bookmarkedCollectionIdsByItemId.get(itemId) || new Set<string>()
+      : new Set<string>();
 
-    return (
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose} disableScrollLock>
-            {(collections || []).map((c) => {
-                const checked = itemCollectionIds.has(c.id);
-                return (
-                    <MenuItem key={c.id} onClick={() => handlePick(c)}>
-                        <ListItemIcon>{checked ? <CheckIcon fontSize="small" /> : <Box sx={{ width: 20 }} />}</ListItemIcon>
-                        <ListItemText>{c.name}</ListItemText>
-                    </MenuItem>
-                );
-            })}
-            {(collections || []).length > 0 ? <Divider /> : null}
-            {newCollectionMode ? (
-                <MenuItem
-                    disableRipple
-                    onKeyDown={(e) => e.stopPropagation()}
-                    sx={{ display: 'flex', gap: 1 }}
-                >
-                    <TextField
-                        size="small"
-                        autoFocus
-                        placeholder="Collection name"
-                        value={newCollectionName}
-                        onChange={(e) => setNewCollectionName(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleCreate();
-                            } else if (e.key === 'Escape') {
-                                e.preventDefault();
-                                setNewCollectionMode(false);
-                            }
-                        }}
-                        slotProps={{ htmlInput: { maxLength: MAX_COLLECTION_NAME_LENGTH } }}
-                    />
-                    <Button size="small" disabled={!newCollectionName.trim()} onClick={handleCreate}>Save</Button>
-                </MenuItem>
-            ) : (
-                <MenuItem onClick={() => setNewCollectionMode(true)}>
-                    <ListItemIcon><Box sx={{ width: 20 }} /></ListItemIcon>
-                    <ListItemText>New collection…</ListItemText>
-                </MenuItem>
-            )}
-        </Menu>
-    );
+  return (
+    <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose} disableScrollLock>
+      {(collections || []).map((c) => {
+        const checked = itemCollectionIds.has(c.id);
+        return (
+          <MenuItem key={c.id} onClick={() => handlePick(c)}>
+            <ListItemIcon>
+              {checked ? <CheckIcon fontSize="small" /> : <Box sx={{ width: 20 }} />}
+            </ListItemIcon>
+            <ListItemText>{c.name}</ListItemText>
+          </MenuItem>
+        );
+      })}
+      {(collections || []).length > 0 ? <Divider /> : null}
+      {newCollectionMode ? (
+        <MenuItem
+          disableRipple
+          onKeyDown={(e) => e.stopPropagation()}
+          sx={{ display: 'flex', gap: 1 }}
+        >
+          <TextField
+            size="small"
+            autoFocus
+            placeholder="Collection name"
+            value={newCollectionName}
+            onChange={(e) => setNewCollectionName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCreate();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setNewCollectionMode(false);
+              }
+            }}
+            slotProps={{ htmlInput: { maxLength: MAX_COLLECTION_NAME_LENGTH } }}
+          />
+          <Button size="small" disabled={!newCollectionName.trim()} onClick={handleCreate}>
+            Save
+          </Button>
+        </MenuItem>
+      ) : (
+        <MenuItem onClick={() => setNewCollectionMode(true)}>
+          <ListItemIcon>
+            <Box sx={{ width: 20 }} />
+          </ListItemIcon>
+          <ListItemText>New collection…</ListItemText>
+        </MenuItem>
+      )}
+    </Menu>
+  );
 }

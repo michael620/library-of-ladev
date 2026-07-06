@@ -1,12 +1,12 @@
 module.exports = {
-    attributes: {
-        // association
-        owner: {
-            model: 'video'
-        },
-        tags: {
-            collection: 'tag',
-            via: 'owners'
-        }
-    }
-}
+  attributes: {
+    // association
+    owner: {
+      model: 'video',
+    },
+    tags: {
+      collection: 'tag',
+      via: 'owners',
+    },
+  },
+};

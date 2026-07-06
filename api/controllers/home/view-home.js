@@ -7,11 +7,11 @@ module.exports = {
 
   exits: {
     success: {
-      responseType: 'inertia'
-    }
+      responseType: 'inertia',
+    },
   },
 
   fn: async function () {
-    return { page: 'index' }
-  }
-}
+    return { page: 'index' };
+  },
+};

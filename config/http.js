@@ -48,5 +48,5 @@ module.exports.http = {
     //   var middlewareFn = skipper({ strict: true });
     //   return middlewareFn;
     // })(),
-  }
-}
+  },
+};

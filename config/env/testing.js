@@ -6,22 +6,22 @@ module.exports = {
     // apianalytics: false
   },
   log: {
-    level: 'error'
+    level: 'error',
   },
   models: {
-    migrate: 'drop'
+    migrate: 'drop',
   },
   datastores: {
     default: {
-      adapter: 'sails-disk'
-    }
+      adapter: 'sails-disk',
+    },
   },
   mail: {
     default: 'log',
     mailers: {
       log: {
-        transport: 'log'
-      }
-    }
-  }
-}
+        transport: 'log',
+      },
+    },
+  },
+};

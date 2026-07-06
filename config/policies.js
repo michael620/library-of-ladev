@@ -17,5 +17,5 @@ module.exports.policies = {
    ***************************************************************************/
   'sections/*': true,
   'upload/*': 'is-authenticated',
-  'admin/*': 'is-non-prod'
-}
+  'admin/*': 'is-non-prod',
+};

@@ -16,4 +16,4 @@ module.exports.inertia = {
    * e.g 4 or () => 4
    */
   // version: 1,
-}
+};
