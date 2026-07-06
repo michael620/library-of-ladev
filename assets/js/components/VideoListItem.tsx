@@ -6,6 +6,7 @@ import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
 import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Box from '@mui/material/Box';
@@ -35,6 +36,8 @@ export interface VideoListItemProps {
     isMobile: boolean;
     /** undefined when the row isn't open; otherwise the persisted theatre preference. */
     theatreMode?: boolean;
+    isAdmin?: boolean;
+    onClickEdit?: (video: Video) => void;
 }
 
 const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
@@ -50,7 +53,9 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
         _onReady,
         setHostEl,
         isMobile,
-        theatreMode
+        theatreMode,
+        isAdmin,
+        onClickEdit
     } = props;
     const { url, title, date, total, subtitles } = video;
     const ref = useRef<HTMLDivElement | null>(null);
@@ -116,13 +121,35 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
             {isOpen ? (
                 <Box display='flex' alignItems='center'>
                     <Box display='flex' alignItems='center' onClick={stopPropagation}>
+                        {isAdmin && onClickEdit ? (
+                            <IconButton
+                                onClick={(e) => { e.stopPropagation(); onClickEdit(video); }}
+                                aria-label="Edit video"
+                                title="Edit video"
+                            >
+                                <EditIcon />
+                            </IconButton>
+                        ) : null}
                         <IconButton onClick={toggleVideoOptions} aria-label="Video options" title="Video options">
                             <MoreVertIcon />
                         </IconButton>
                     </Box>
                     <ExpandLess />
                 </Box>
-            ) : <ExpandMore />}
+            ) : (
+                <Box display='flex' alignItems='center'>
+                    {isAdmin && onClickEdit ? (
+                        <IconButton
+                            onClick={(e) => { e.stopPropagation(); onClickEdit(video); }}
+                            aria-label="Edit video"
+                            title="Edit video"
+                        >
+                            <EditIcon />
+                        </IconButton>
+                    ) : null}
+                    <ExpandMore />
+                </Box>
+            )}
         </ListItemButton>
         <Collapse in={isOpen} timeout="auto" unmountOnExit onEntered={() => setPlayerReady(true)} onExit={onCollapseVideoListItem}>
             <Paper elevation={2}>

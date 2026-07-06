@@ -213,6 +213,7 @@ const processRawResultSubtitle = (rawResult) => {
     const results = rawResult.rows.map(row => ({
         subtitleId: row.subtitleId,
         startTime: row.startTime,
+        endTime: row.endTime,
         timestamp: formatSeconds(row.startTime),
         text: row.text
     }));

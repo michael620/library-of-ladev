@@ -1,6 +1,7 @@
 export interface Subtitle {
     subtitleId: number;
     startTime: number;
+    endTime?: number;
     timestamp: string;
     text: string;
 }

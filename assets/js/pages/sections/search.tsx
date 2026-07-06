@@ -21,7 +21,8 @@ import {
     createCollection
 } from '@/utils/bookmarks';
 import type { Collection, ItemsMap } from '@/utils/bookmarks';
-import type { SearchParams, SearchResult, Subtitle, SubtitleWithVideo, TagsMap } from '@/types';
+import type { SearchParams, SearchResult, Subtitle, SubtitleWithVideo, SubtitleServerRow, TagsMap, Video } from '@/types';
+import AdminEditDialog from '@/components/admin/AdminEditDialog';
 
 export interface SearchPageProps {
     searchParams: SearchParams;
@@ -31,6 +32,7 @@ export interface SearchPageProps {
     allSubtitlesFetched?: boolean;
     noMoreResultsToFetch?: boolean;
     fatalError?: string;
+    isAdmin?: boolean;
 }
 
 interface SubtitleResultState {
@@ -53,6 +55,7 @@ export default function Search(props: SearchPageProps) {
     const [collections, setCollections] = useState<Collection[]>([]);
     const [lastUsedId, setLastUsedId] = useState<string | null>(null);
     const [items, setItems] = useState<ItemsMap>({});
+    const [editingVideo, setEditingVideo] = useState<Video | null>(null);
     const observer = useRef<IntersectionObserver | null>(null);
     const observerSubtitle = useRef<IntersectionObserver | null>(null);
 
@@ -164,7 +167,7 @@ export default function Search(props: SearchPageProps) {
             lastFtsIndex: fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : undefined,
             lastUrl: fetchType === FETCH_TYPE.PAGE ? searchResult[searchResult.length - 1].url : undefined,
         };
-        router.visit('/search', {
+        router.visit(props.isAdmin ? '/admin' : '/search', {
             data,
             preserveState: true,
             preserveScroll: true,
@@ -196,7 +199,7 @@ export default function Search(props: SearchPageProps) {
             excludeTags: props.searchParams?.excludeTags,
             fetchAll
         };
-        router.visit('/search', {
+        router.visit(props.isAdmin ? '/admin' : '/search', {
             data,
             preserveState: true,
             preserveScroll: true,
@@ -262,6 +265,35 @@ export default function Search(props: SearchPageProps) {
             observerSubtitle.current?.disconnect();
         };
     }, []);
+
+    const loadAdminSubtitles = useCallback(async (url: string): Promise<SubtitleServerRow[]> => {
+        const params = new URLSearchParams();
+        params.set('fetchType', 'SUBTITLE');
+        params.set('videoUrl', url);
+        params.set('fetchAll', 'true');
+        const res = await fetch(`/admin?${params.toString()}`, {
+            headers: { 'X-Inertia': 'true', 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        const subs = data.props?.subtitleResult || [];
+        return subs.map((s: { subtitleId: number; startTime: number; endTime?: number; text: string }) => ({
+            id: s.subtitleId,
+            startTime: s.startTime,
+            endTime: s.endTime ?? s.startTime,
+            text: s.text
+        }));
+    }, []);
+
+    const handleAdminSaved = useCallback((url: string, patch: { title: string; date: string; tags: string[] }) => {
+        setSearchResult(prev => prev ? prev.map(v =>
+            v.url === url ? { ...v, title: patch.title, date: patch.date, tags: patch.tags } : v
+        ) : prev);
+    }, []);
+
+    const handleAdminDeleted = useCallback((url: string) => {
+        setSearchResult(prev => prev ? prev.filter(v => v.url !== url) : prev);
+    }, []);
+
     return (
     <Box>
     <Head>
@@ -278,6 +310,7 @@ export default function Search(props: SearchPageProps) {
         showMatchPreviews={showMatchPreviews}
         setShowMatchPreviews={setShowMatchPreviews}
         tags={props.tags}
+        isAdmin={props.isAdmin}
     />
     {props.fatalError ? <Alert variant="filled" severity="error">{`Encountered a fatal error: ${props.fatalError}`}</Alert> : ''}
     <Paper elevation={1}>
@@ -302,8 +335,18 @@ export default function Search(props: SearchPageProps) {
             onBookmarkToggle={handleBookmarkToggle}
             onPickCollection={handlePickCollection}
             onCreateCollection={handleCreateCollection}
+            isAdmin={props.isAdmin}
+            onClickEdit={(video) => setEditingVideo(video)}
         />
     </Paper>
+    <AdminEditDialog
+        video={editingVideo}
+        tags={props.tags}
+        loadSubtitles={loadAdminSubtitles}
+        onClose={() => setEditingVideo(null)}
+        onSaved={handleAdminSaved}
+        onDeleted={handleAdminDeleted}
+    />
     </Box>
     )
 }

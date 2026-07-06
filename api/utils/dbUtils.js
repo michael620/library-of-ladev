@@ -45,7 +45,7 @@ VideoTags AS (
 )
 `;
 const SUBTITLE_SEARCH_RAW_SQL = `
-SELECT subtitle.id AS "subtitleId", subtitle.text, subtitle."startTime"
+SELECT subtitle.id AS "subtitleId", subtitle.text, subtitle."startTime", subtitle."endTime"
 FROM subtitle
 JOIN video ON subtitle.owner = video.id
 WHERE video.url = $2

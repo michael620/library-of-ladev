@@ -43,10 +43,11 @@ export interface SearchBarProps {
     showMatchPreviews: boolean;
     setShowMatchPreviews: (next: boolean) => void;
     tags: TagsMap;
+    isAdmin?: boolean;
 }
 
 export default function SearchBar(props: SearchBarProps) {
-    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, showMatchPreviews, setShowMatchPreviews } = props;
+    const { isLoading, setIsLoading, showFullSearchBar, showTags, setShowTags, showMatchPreviews, setShowMatchPreviews, isAdmin } = props;
     const [isFullTextSearch, setIsFullTextSearch] = useState<boolean>(props.searchParams?.isFullTextSearch || false);
     const [title, setTitle] = useState<string>(props.searchParams?.title || '');
     const [isAscending, setIsAscending] = useState<boolean>(props.searchParams?.isAscending || false);
@@ -155,7 +156,7 @@ export default function SearchBar(props: SearchBarProps) {
         if (excludeTags.length) {
             data.excludeTags = excludeTags;
         }
-        router.visit('/search', {
+        router.visit(isAdmin ? '/admin' : '/search', {
             data: data as Record<string, FormDataConvertible>
         });
     };
