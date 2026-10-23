@@ -9,26 +9,24 @@ FilteredVideos AS (  -- Step 2: Apply required tags, filtering only valid videos
     SELECT tm.video_id
     FROM tagmap tm
     JOIN tag t ON tm.tag_id = t.id
-    WHERE ($9::text[] IS NULL OR tm.video_id NOT IN (SELECT video_id FROM ExcludedVideos)) -- Exclude unwanted videos
-    AND ($10::text[] IS NULL OR t.name = ANY($10::text[]))  -- Ensure required tags exist
+    WHERE t.name = ANY($10::text[])  -- Only consider required tags
     GROUP BY tm.video_id
-    HAVING 
-        ($10::text[] IS NULL OR COUNT(DISTINCT t.name) FILTER (WHERE t.name = ANY($10::text[])) = array_length($10::text[], 1)) -- Ensure all required tags exist
+    HAVING COUNT(DISTINCT t.name) = array_length($10::text[], 1)  -- Ensure ALL required tags exist
 ),
 FilteredVideosWithMeta AS (  -- Step 3: Filter on video.date, video.title, and pagination
     SELECT v.id AS video_id
     FROM video v
-    WHERE ($9::text[] IS NULL OR v.id NOT IN (SELECT video_id FROM ExcludedVideos))  -- Reapply exclusion for safety
+    WHERE ($9::text[] IS NULL OR NOT EXISTS (SELECT 1 FROM ExcludedVideos e WHERE e.video_id = v.id))  -- Exclude unwanted videos
     AND ($10::text[] IS NULL OR v.id IN (SELECT video_id FROM FilteredVideos))  -- Ensure required tags
     AND ($4::text IS NULL OR v.date >= $4)  -- Start date filter (if provided)
     AND ($5::text IS NULL OR v.date <= $5)  -- End date filter (if provided)
     AND ($3::text IS NULL OR v.title ILIKE $3)  -- Title filter (if provided)
-    AND ( -- Pagination
-        ($6::text IS NULL OR $7::INTEGER IS NULL OR $11::BIGINT IS NULL)
+    AND ( -- Keyset pagination (comparison direction must match the sort direction)
+        $7::INTEGER IS NULL  -- assume if $7 (lastVideo.id) exists, then $6 and $11 are also set
         OR (
             v.date ${isAscending ? '>' : '<'} $6
-            OR (v.date = $6 AND v.updated_at ${isAscending ? '>' : '<'} $11)
-            OR (v.date = $6 AND v.updated_at = $11 AND v.id > $7)
+            OR (v.date = $6 AND v.updated_at ${isAscending ? '>' : '<'} $11::BIGINT)
+            OR (v.date = $6 AND v.updated_at = $11::BIGINT AND v.id ${isAscending ? '>' : '<'} $7)
         )
     )
 )
@@ -36,8 +34,8 @@ FilteredVideosWithMeta AS (  -- Step 3: Filter on video.date, video.title, and p
 const SQL_VIDEO_TAGS = `
 VideoTags AS (
     SELECT 
-        tm.video_id, 
-        STRING_AGG(t.name, ', ') AS tags
+        tm.video_id,
+        STRING_AGG(t.name, ', ' ORDER BY t.name) AS tags
     FROM tagmap tm
     JOIN tag t ON tm.tag_id = t.id
     WHERE tm.video_id IN (SELECT video_id FROM FilteredVideosWithMeta)
@@ -87,7 +85,7 @@ LimitedVideos AS (
     WHERE id IN (SELECT DISTINCT video_id FROM RankedSubtitles)
     ORDER BY video.date ${isAscending ? 'ASC' : 'DESC'}, video.updated_at ${
   isAscending ? 'ASC' : 'DESC'
-}, video.id
+}, video.id ${isAscending ? 'ASC' : 'DESC'}
     LIMIT $8
 ),
 TotalCount AS (
@@ -104,7 +102,7 @@ LEFT JOIN VideoTags vt ON lv.id = vt.video_id
 WHERE s.row_num <= $2
 ORDER BY s.date ${isAscending ? 'ASC' : 'DESC'}, s.video_updated_at ${
   isAscending ? 'ASC' : 'DESC'
-}, s.video_id, s."startTime";
+}, s.video_id ${isAscending ? 'ASC' : 'DESC'}, s."startTime";
 `;
 const VIDEO_SEARCH_RAW_SQL = (isAscending) => `
 ${SQL_FILTERS(isAscending)},
@@ -113,10 +111,14 @@ SELECT v.url, v.title, v.id, v.date, vt.tags
 FROM video v
 JOIN FilteredVideosWithMeta fv ON v.id = fv.video_id
 LEFT JOIN VideoTags vt ON v.id = vt.video_id
-WHERE true -- unused params
+-- $1 (text) and $8 (offset) are unused here but kept in the param list so the
+-- positional bindings stay aligned with the other queries that share SQL_FILTERS.
+WHERE true
     OR $1::text IS NULL
     OR $8::int IS NULL
-ORDER BY v.date ${isAscending ? 'ASC' : 'DESC'}, v.updated_at ${isAscending ? 'ASC' : 'DESC'}, v.id
+ORDER BY v.date ${isAscending ? 'ASC' : 'DESC'}, v.updated_at ${
+  isAscending ? 'ASC' : 'DESC'
+}, v.id ${isAscending ? 'ASC' : 'DESC'}
 LIMIT $2;
 `;
 const BOOKMARKS_BACKUP_RAW_SQL = `
@@ -156,7 +158,8 @@ const sanitizeInput = async (params) => {
   if (videoUrl && !(await Video.findOne({ url: videoUrl }))) {
     error += `No video found for videoUrl: ${videoUrl}.\n`;
   }
-  if (lastUrl && !(await Video.findOne({ url: lastUrl }))) {
+  const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
+  if (lastUrl && !lastVideo) {
     error += `No video found for lastUrl: ${lastUrl}.\n`;
   }
   const sanitizedText = text?.replace(/\*/g, '%').replace(/\?/g, '_');
@@ -167,6 +170,7 @@ const sanitizeInput = async (params) => {
     fetchSize: fetchSize || FETCH_SIZE,
     text: sanitizedText,
     title: sanitizedTitle,
+    lastVideo,
   };
 };
 const getSubtitleSearchResults = async (params) => {
@@ -210,11 +214,10 @@ const getTextSearchResults = async (params) => {
     endDate,
     includeTags,
     excludeTags,
-    lastUrl,
+    lastVideo,
     fetchSize,
     isAscending,
   } = params;
-  const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
   const rawResult = await sails.sendNativeQuery(TEXT_SEARCH_RAW_SQL(isAscending), [
     `%${text}%`, // $1
     fetchSize, // $2
@@ -226,15 +229,14 @@ const getTextSearchResults = async (params) => {
     fetchSize, // $8
     excludeTags, // $9
     includeTags, // $10
-    lastVideo?.updatedAt.toString(), // $11
+    lastVideo?.updatedAt?.toString() ?? null, // $11 (epoch ms, compared as BIGINT)
   ]);
   return processRawResult(rawResult);
 };
 const getVideoSearchResults = async (params) => {
   const { processRawResult } = require('./utils');
-  const { title, startDate, endDate, includeTags, excludeTags, lastUrl, fetchSize, isAscending } =
+  const { title, startDate, endDate, includeTags, excludeTags, lastVideo, fetchSize, isAscending } =
     params;
-  const lastVideo = lastUrl ? await Video.findOne({ url: lastUrl }) : undefined;
   const rawResult = await sails.sendNativeQuery(VIDEO_SEARCH_RAW_SQL(isAscending), [
     null, // $1
     fetchSize, // $2
@@ -246,7 +248,7 @@ const getVideoSearchResults = async (params) => {
     null, // $8
     excludeTags, // $9
     includeTags, // $10
-    lastVideo?.updatedAt.toString(), // $11
+    lastVideo?.updatedAt?.toString() ?? null, // $11 (epoch ms, compared as BIGINT)
   ]);
   return processRawResult(rawResult);
 };
