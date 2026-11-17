@@ -1,4 +1,5 @@
 module.exports = {
+  tableName: 'stream_group',
   attributes: {
     maintainerKey: {
       type: 'string',
