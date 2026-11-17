@@ -8,6 +8,7 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
+import { DISCORD_URL } from '../../../shared/constants';
 
 export interface AboutDialogProps {
   open: boolean;
@@ -32,10 +33,7 @@ export default function AboutDialog({ open, onClose }: AboutDialogProps) {
           <>
             <Typography gutterBottom variant="body1">
               Follow this project&apos;s discussion at{' '}
-              <Link
-                target="_blank"
-                href="https://discord.com/channels/574720535888396288/1337595628607242282"
-              >
+              <Link target="_blank" href={DISCORD_URL}>
                 Neuro-sama&apos;s Discord server
               </Link>
               .

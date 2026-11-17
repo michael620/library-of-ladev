@@ -4,6 +4,8 @@ const FETCH_TYPE = {
   SUBTITLE: 'SUBTITLE',
 };
 
+const DISCORD_URL = 'https://discord.com/channels/574720535888396288/1337595628607242282';
+
 const TAG_TYPES = {
   STREAM_CONTENT: {
     text: 'Stream Content',
@@ -46,6 +48,7 @@ module.exports = {
   FETCH_SIZE: 25,
   MAX_BOOKMARKS: 10000,
   MAX_BOOKMARK_FALLBACK_PAIRS: 1000,
+  DISCORD_URL,
   FETCH_TYPE,
   TAG_TYPES,
   formatSeconds,

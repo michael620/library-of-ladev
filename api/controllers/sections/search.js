@@ -120,12 +120,12 @@ module.exports = {
         } else {
           props.searchResult = await getTextSearchResults(params);
         }
-        if (props.searchResult.length < FETCH_SIZE) {
+        if (new Set(props.searchResult.map((r) => r.groupId)).size < FETCH_SIZE) {
           props.noMoreResultsToFetch = true;
         }
       } else if (text !== undefined) {
         props.searchResult = await getVideoSearchResults(params);
-        if (props.searchResult.length < FETCH_SIZE) {
+        if (new Set(props.searchResult.map((r) => r.groupId)).size < FETCH_SIZE) {
           props.noMoreResultsToFetch = true;
         }
       }

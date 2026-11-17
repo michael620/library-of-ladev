@@ -31,6 +31,8 @@ import type {
   Video,
 } from '@/types';
 import AdminEditDialog from '@/components/admin/AdminEditDialog';
+import { groupSources } from '@/utils/groupSources';
+import type { GroupedSources } from '@/utils/groupSources';
 
 export interface SearchPageProps {
   searchParams: SearchParams;
@@ -183,6 +185,9 @@ export default function Search(props: SearchPageProps) {
     const fetchType: string = props.searchParams?.isFullTextSearch
       ? FETCH_TYPE.PAGE_FTS
       : FETCH_TYPE.PAGE;
+    const groups: GroupedSources[] = groupSources(searchResult, new Map());
+    const distinctGroupCount = groups.length;
+    const lastGroupVisible: Video | undefined = groups[groups.length - 1]?.visible;
     const data: Record<string, FormDataConvertible> = {
       text: props.searchParams?.text,
       isFullTextSearch: props.searchParams?.isFullTextSearch,
@@ -193,9 +198,8 @@ export default function Search(props: SearchPageProps) {
       includeTags: props.searchParams?.includeTags,
       excludeTags: props.searchParams?.excludeTags,
       fetchType,
-      lastFtsIndex: fetchType === FETCH_TYPE.PAGE_FTS ? searchResult.length : undefined,
-      lastUrl:
-        fetchType === FETCH_TYPE.PAGE ? searchResult[searchResult.length - 1].url : undefined,
+      lastFtsIndex: fetchType === FETCH_TYPE.PAGE_FTS ? distinctGroupCount : undefined,
+      lastUrl: fetchType === FETCH_TYPE.PAGE ? lastGroupVisible?.url : undefined,
     };
     router.visit(props.isAdmin ? '/admin' : '/search', {
       data,
