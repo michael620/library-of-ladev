@@ -12,6 +12,7 @@ import VideoListItem from './VideoListItem';
 import VideoExportPopper from './VideoExportPopper';
 import MobileOptionsPopper from './MobileOptionsPopper';
 import BookmarkPickerMenu from './BookmarkPickerMenu';
+import { groupSources } from '@/utils/groupSources';
 import type {
   SearchResult,
   SubtitleWithVideo,
@@ -98,6 +99,9 @@ export default function SearchList(props: SearchListProps) {
   const [bookmarkPickerSubtitle, setBookmarkPickerSubtitle] = useState<SubtitleWithVideo | null>(
     null
   );
+  const [selectedSourceByGroup, setSelectedSourceByGroup] = useState<Map<number, number>>(
+    new Map()
+  );
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [theatreMode, setTheatreMode] = useState<boolean>(() => {
@@ -111,6 +115,26 @@ export default function SearchList(props: SearchListProps) {
       return next;
     });
   }, []);
+
+  const handleSelectSource = useCallback(
+    (groupId: number, videoId: number, groupSourceList: Video[]) => {
+      setSelectedSourceByGroup((prev) => {
+        const next = new Map(prev);
+        next.set(groupId, videoId);
+        return next;
+      });
+      // If the currently-open row belongs to this group, collapse it so the
+      // previous source's subtitles don't remain visible after a source switch.
+      setOpen((prevOpen) => {
+        if (prevOpen !== null && groupSourceList.some((s) => s.url === prevOpen)) {
+          setCurrentVideo(null);
+          return null;
+        }
+        return prevOpen;
+      });
+    },
+    []
+  );
 
   const handleClickSubtitleListItem = useCallback(
     (key: string, video: Video, i: number) => {
@@ -278,32 +302,66 @@ export default function SearchList(props: SearchListProps) {
         ) : null}
       </ListSubheader>
       <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-        {props.searchResult.map((video, i) => {
-          return (
-            <VideoListItem
-              key={video.url}
-              {...{
-                video,
-                open,
-                onCollapseVideoListItem,
-                handleClickSubtitleListItem,
-                i,
-                showTags,
-                showMatchPreviews,
-                toggleVideoOptions,
-                _onReady,
-                text: props.text,
-                tags: props.tags,
-                onFetchMoreSubtitles: props.onFetchMoreSubtitles,
-                setHostEl,
-                isMobile,
-                theatreMode: open === video.url ? theatreMode : undefined,
-                isAdmin: props.isAdmin,
-                onClickEdit: props.onClickEdit,
-              }}
-            />
-          );
-        })}
+        {props.bookmarksMode || !props.searchResult.length
+          ? // Bookmarks mode (or empty): rows have no group fields — render flat, one row per Video.
+            props.searchResult.map((video, i) => {
+              return (
+                <VideoListItem
+                  key={video.url}
+                  {...{
+                    video,
+                    open,
+                    onCollapseVideoListItem,
+                    handleClickSubtitleListItem,
+                    i,
+                    showTags,
+                    showMatchPreviews,
+                    toggleVideoOptions,
+                    _onReady,
+                    text: props.text,
+                    tags: props.tags,
+                    onFetchMoreSubtitles: props.onFetchMoreSubtitles,
+                    setHostEl,
+                    isMobile,
+                    theatreMode: open === video.url ? theatreMode : undefined,
+                    isAdmin: props.isAdmin,
+                    onClickEdit: props.onClickEdit,
+                  }}
+                />
+              );
+            })
+          : // Search mode: group sources, render one row per group.
+            groupSources(props.searchResult, selectedSourceByGroup).map((group) => {
+              const video = group.visible as Video;
+              const i = props.searchResult!.findIndex((v) => v.url === video.url);
+              return (
+                <VideoListItem
+                  key={group.groupId}
+                  {...{
+                    video,
+                    open,
+                    onCollapseVideoListItem,
+                    handleClickSubtitleListItem,
+                    i,
+                    showTags,
+                    showMatchPreviews,
+                    toggleVideoOptions,
+                    _onReady,
+                    text: props.text,
+                    tags: props.tags,
+                    onFetchMoreSubtitles: props.onFetchMoreSubtitles,
+                    setHostEl,
+                    isMobile,
+                    theatreMode: open === video.url ? theatreMode : undefined,
+                    isAdmin: props.isAdmin,
+                    onClickEdit: props.onClickEdit,
+                    sources: group.sources as Video[],
+                    onSelectSource: (videoId: number) =>
+                      handleSelectSource(group.groupId, videoId, group.sources as Video[]),
+                  }}
+                />
+              );
+            })}
       </List>
       {!props.searchResult?.length ? (
         ''

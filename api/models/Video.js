@@ -11,10 +11,14 @@ module.exports = {
     date: {
       type: 'string',
     },
-    // association
+    // associations
     subtitles: {
       collection: 'subtitle',
       via: 'owner',
+    },
+    group: {
+      model: 'streamgroup',
+      columnName: 'group_id',
     },
   },
 };

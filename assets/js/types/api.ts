@@ -15,6 +15,9 @@ export interface Video {
   title: string;
   date: string;
   tags: string[];
+  videoId?: number;
+  groupId?: number;
+  defaultVideoId?: number | null;
   subtitles?: Subtitle[];
   matches?: Match[];
   total?: number;

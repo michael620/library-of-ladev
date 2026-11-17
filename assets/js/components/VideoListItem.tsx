@@ -15,8 +15,12 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import Link from '@mui/material/Link';
 import YouTube from 'react-youtube';
 import type { Video, TagsMap, YouTubePlayer } from '@/types';
+import { DISCORD_URL } from '../../../shared/constants';
+import SourceToggle from './SourceToggle';
 
 export interface VideoListItemProps {
   video: Video;
@@ -38,6 +42,8 @@ export interface VideoListItemProps {
   theatreMode?: boolean;
   isAdmin?: boolean;
   onClickEdit?: (video: Video) => void;
+  sources?: Video[];
+  onSelectSource?: (videoId: number) => void;
 }
 
 const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
@@ -56,12 +62,15 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
     theatreMode,
     isAdmin,
     onClickEdit,
+    sources,
+    onSelectSource,
   } = props;
   const { url, title, date, total, subtitles } = video;
   const ref = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
   const prevTheatreRef = useRef<boolean | null>(null);
   const [playerReady, setPlayerReady] = useState<boolean>(false);
+  const [unavailable, setUnavailable] = useState<number | null>(null);
   const isOpen = open === url;
   const effectiveTheatre = !!theatreMode && !isMobile;
   const theme = useTheme();
@@ -70,8 +79,12 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
       setHostEl(ref.current);
     } else {
       setPlayerReady(false);
+      setUnavailable(null);
     }
   }, [isOpen, setHostEl]);
+  useEffect(() => {
+    setUnavailable(null);
+  }, [url]);
   useEffect(() => {
     if (isOpen) {
       const justOpened = prevTheatreRef.current === null;
@@ -107,6 +120,11 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
           disableTypography
           secondary={
             <Box display="flex" flexDirection="column">
+              {sources && sources.length > 1 && video.videoId !== undefined && onSelectSource ? (
+                <Box onClick={(e) => e.stopPropagation()} sx={{ mb: 0.5 }}>
+                  <SourceToggle sources={sources} value={video.videoId} onChange={onSelectSource} />
+                </Box>
+              ) : null}
               {showTags && video.tags.length ? (
                 <Box display="flex" flexDirection="row" flexWrap="wrap" sx={{ gap: 1 }}>
                   {video.tags.map((tag, i) => (
@@ -222,6 +240,28 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
                     }
               }
             >
+              {unavailable !== null ? (
+                <Alert severity="warning">
+                  This video is unavailable — it may be blocked, private, or removed.{' '}
+                  {sources && sources.length > 1 ? 'Try another source above. ' : null}
+                  {!(sources && sources.length > 1) ? (
+                    <>
+                      <Link href={DISCORD_URL} target="_blank" rel="noopener">
+                        Report it on Discord
+                      </Link>
+                      .{' '}
+                    </>
+                  ) : null}
+                  <Link
+                    href={`https://www.youtube.com/watch?v=${url}`}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Watch on YouTube
+                  </Link>
+                  .
+                </Alert>
+              ) : null}
               <Box
                 ref={playerRef}
                 sx={
@@ -261,6 +301,11 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
                       },
                     }}
                     onReady={_onReady}
+                    onError={(e: { data: number }) => {
+                      if ([100, 101, 150].includes(e.data)) {
+                        setUnavailable(e.data);
+                      }
+                    }}
                   />
                 ) : null}
               </Box>

@@ -45,12 +45,34 @@ const onCloseTSV = async (subtitles, url, resolve) => {
 
 const createOrUpdateVideos = async (video_metadata) => {
   if (!video_metadata) return;
-  for (const key of Object.keys(video_metadata)) {
-    const metadata = video_metadata[key];
-    const { url, title, date, tags } = metadata;
+
+  const { resolveGroupPlan } = require('./groupIngest');
+  const metaRows = Object.values(video_metadata);
+  const plan = resolveGroupPlan(metaRows);
+  for (const warning of plan.warnings) {
+    sails.log.warn(warning);
+  }
+
+  // Map from groupKey -> numeric stream_group.id (lazily populated)
+  const groupIdCache = new Map();
+
+  for (const resolvedRow of plan.rows) {
+    const { url, groupKey } = resolvedRow;
+    const metadata = video_metadata[url];
+    const { title, date, tags } = metadata;
     const { TAG_TYPES } = require('../../shared/constants');
-    await Video.findOrCreate({ url }, { url, title, date });
-    await Video.updateOne({ url }, { url, title, date });
+
+    // Lazily findOrCreate the StreamGroup keyed on maintainerKey so re-ingest
+    // rejoins the existing group row instead of creating a new orphan.
+    if (!groupIdCache.has(groupKey)) {
+      const sg = await StreamGroup.findOrCreate({ maintainerKey: groupKey }, { maintainerKey: groupKey });
+      groupIdCache.set(groupKey, sg.id);
+    }
+    const groupDbId = groupIdCache.get(groupKey);
+
+    await Video.findOrCreate({ url }, { url, title, date, group: groupDbId });
+    await Video.updateOne({ url }, { url, title, date, group: groupDbId });
+
     if (tags) {
       const tagsArr = tags.split(', ');
       const sqls = [];
@@ -78,6 +100,19 @@ const createOrUpdateVideos = async (video_metadata) => {
       }
     }
   }
+
+  // Resolve each group's default_video_id in a follow-up pass.
+  // Only overwrite existing default if upload explicitly sets is_default
+  for (const [groupKey, { url: defaultUrl, explicit }] of plan.groupDefaults) {
+    const groupId = groupIdCache.get(groupKey);
+    if (!explicit) {
+      const group = await StreamGroup.findOne({ id: groupId });
+      if (group && group.defaultVideo != null) continue;
+    }
+    const v = await Video.findOne({ url: defaultUrl });
+    await StreamGroup.updateOne({ id: groupId }).set({ defaultVideo: v.id });
+  }
+
   await sails.hooks['db-refresh'].fetchAndUpdate();
 };
 
@@ -119,13 +154,15 @@ const buildVideoMetadata = async (fd) => {
     const metadata = {};
     createInterface({ input: createReadStream(fd) })
       .on('line', (data) => {
-        const [url, title = 'Untitled Stream', date = defaultDate, tags = ''] = data.split('\t');
+        const [url, title = 'Untitled Stream', date = defaultDate, tags = '', groupId = '', isDefault = ''] = data.split('\t');
         if (!url || url === 'url') return;
         metadata[url] = {
           url,
           date,
           title,
           tags,
+          groupId: groupId || undefined,
+          isDefault: isDefault !== '',
         };
       })
       .on('close', () => {
@@ -140,8 +177,16 @@ const buildVideoMetadataFromText = (data) => {
   const dayjs = require('dayjs');
   const defaultDate = dayjs().format('YYYY-MM-DD');
   for (const line of lines) {
-    const [url, title = 'Untitled Stream', date = defaultDate, tags = ''] = line.split('\t');
-    metadata[url] = { url, date, title, tags };
+    const [url, title = 'Untitled Stream', date = defaultDate, tags = '', groupId = '', isDefault = ''] = line.split('\t');
+    if (url === 'url') continue;
+    metadata[url] = {
+      url,
+      date,
+      title,
+      tags,
+      groupId: groupId || undefined,
+      isDefault: isDefault !== '',
+    };
   }
   return metadata;
 };
@@ -175,6 +220,9 @@ const processRawResult = (rawResult) => {
       title,
       date,
       tags: sortTags(tags),
+      videoId: row.id,
+      groupId: row.group_id,
+      defaultVideoId: row.default_video_id,
     };
     if (row.text) {
       entry.total = entry.total || row.total_count;
@@ -196,15 +244,20 @@ const processRawResultFTS = (rawResult) => {
   const map = new Map();
   for (const row of rawResult.rows) {
     const { url, title, date, tags } = row;
-    const matches = row.snippets.split(' || ').map((snippet) => {
-      return { text: snippet };
-    });
+    const matches = row.snippets
+      ? row.snippets.split(' || ').map((snippet) => {
+          return { text: snippet };
+        })
+      : [];
     const entry = map.get(row.url) || {
       url,
       title,
       date,
       tags: sortTags(tags),
       matches: [],
+      videoId: row.id,
+      groupId: row.group_id,
+      defaultVideoId: row.default_video_id,
     };
     entry.matches.push(...matches);
     map.set(row.url, entry);
