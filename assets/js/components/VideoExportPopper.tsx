@@ -22,7 +22,8 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers/timeViewRenderers';
 import type { Dayjs } from 'dayjs';
 import { dayJsToSeconds, formatSeconds, timeStrToDayJs } from '../../../shared/constants';
-import type { LiveCurrentVideo, YouTubePlayer } from '@/types';
+import type { LiveCurrentVideo, Video, YouTubePlayer } from '@/types';
+import SourceToggle from './SourceToggle';
 
 export interface VideoExportPopperProps {
   anchorEl: HTMLElement | null;
@@ -39,6 +40,9 @@ export interface VideoExportPopperProps {
   toggleTheatreMode: () => void;
   syncSubtitles: boolean;
   setSyncSubtitles?: (next: boolean) => void;
+  sources?: Video[];
+  sourceValue?: number;
+  onSelectSource?: (videoId: number) => void;
 }
 
 export default function VideoExportPopper(props: VideoExportPopperProps) {
@@ -56,6 +60,9 @@ export default function VideoExportPopper(props: VideoExportPopperProps) {
     toggleTheatreMode,
     syncSubtitles,
     setSyncSubtitles,
+    sources,
+    sourceValue,
+    onSelectSource,
   } = props;
   const [startTime, setStartTime] = useState<Dayjs | null>(timeStrToDayJs('00:00:00'));
   const [endTime, setEndTime] = useState<Dayjs | null>(timeStrToDayJs('00:00:00'));
@@ -140,6 +147,17 @@ export default function VideoExportPopper(props: VideoExportPopperProps) {
               </IconButton>
             </Box>
             <Box display="flex" flexDirection="column" justifyContent="start" sx={{ gap: 2 }}>
+              {sources && sources.length > 1 && sourceValue !== undefined && onSelectSource ? (
+                <>
+                  <Box display="flex" flexDirection="column" justifyContent="start" sx={{ gap: 1 }}>
+                    <Typography component="span" variant="subtitle2">
+                      Source
+                    </Typography>
+                    <SourceToggle sources={sources} value={sourceValue} onChange={onSelectSource} />
+                  </Box>
+                  <Divider />
+                </>
+              ) : null}
               <Box display="flex" flexDirection="column" justifyContent="start">
                 {!isMobile ? (
                   <FormControlLabel

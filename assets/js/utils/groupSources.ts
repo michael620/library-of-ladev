@@ -29,6 +29,16 @@ export function groupSources(
   for (const [groupId, sources] of groups) {
     const selectedVideoId = selectedByGroup.get(groupId);
 
+    // Sort the group's default source first (so it is "Source 1")
+    const defaultVideoId = sources[0].defaultVideoId;
+    sources.sort((a, b) => {
+      if (defaultVideoId != null) {
+        if (a.videoId === defaultVideoId) return -1;
+        if (b.videoId === defaultVideoId) return 1;
+      }
+      return (a.videoId ?? 0) - (b.videoId ?? 0);
+    });
+
     let visible: Video | null = null;
 
     // (1) User selection override
@@ -38,7 +48,6 @@ export function groupSources(
 
     // (2) Default video
     if (visible === null) {
-      const defaultVideoId = sources[0].defaultVideoId;
       if (defaultVideoId !== null && defaultVideoId !== undefined) {
         visible = sources.find((s) => s.videoId === defaultVideoId) || null;
       }

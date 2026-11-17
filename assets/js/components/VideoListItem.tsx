@@ -7,11 +7,13 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import Avatar from '@mui/material/Avatar';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import Tooltip from '@mui/material/Tooltip';
 import Paper from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
@@ -20,7 +22,6 @@ import Link from '@mui/material/Link';
 import YouTube from 'react-youtube';
 import type { Video, TagsMap, YouTubePlayer } from '@/types';
 import { DISCORD_URL } from '../../../shared/constants';
-import SourceToggle from './SourceToggle';
 
 export interface VideoListItemProps {
   video: Video;
@@ -43,7 +44,6 @@ export interface VideoListItemProps {
   isAdmin?: boolean;
   onClickEdit?: (video: Video) => void;
   sources?: Video[];
-  onSelectSource?: (videoId: number) => void;
 }
 
 const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
@@ -63,7 +63,6 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
     isAdmin,
     onClickEdit,
     sources,
-    onSelectSource,
   } = props;
   const { url, title, date, total, subtitles } = video;
   const ref = useRef<HTMLDivElement | null>(null);
@@ -108,23 +107,42 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
   } else if (video.matches) {
     numMatches = video.matches.length;
   }
+  const sourceMatchCount = (source: Video): number => {
+    if (source.subtitles) return Number(source.total) || 0;
+    if (source.matches) return source.matches.length;
+    return 0;
+  };
+  const otherSourceMatches =
+    props.text && sources && sources.length > 1
+      ? sources.reduce((sum, s) => (s.url === url ? sum : sum + sourceMatchCount(s)), 0)
+      : 0;
+  const hasMultipleSources = !!(sources && sources.length > 1);
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
   return (
-    <ListItem key={url} disablePadding sx={{ display: 'block', scrollMarginTop: 64 }}>
+    <ListItem disablePadding sx={{ display: 'block', scrollMarginTop: 64 }}>
       <ListItemButton onClick={() => handleClickSubtitleListItem(url, video, i)}>
         <ListItemAvatar>
           <Avatar alt="YouTube thumbnail" src={`https://img.youtube.com/vi/${url}/default.jpg`} />
         </ListItemAvatar>
         <ListItemText
-          primary={`${title} - ${date}`}
+          primary={
+            <Box display="flex" flexDirection="row" alignItems="center" sx={{ gap: 1 }}>
+              <span>{`${title} - ${date}`}</span>
+              {hasMultipleSources ? (
+                <Tooltip title="This stream has multiple sources. Switch between them from the video options (⋮) menu.">
+                  <Chip
+                    label={`${sources!.length} sources`}
+                    size="small"
+                    variant="outlined"
+                    icon={<VideoLibraryIcon />}
+                  />
+                </Tooltip>
+              ) : null}
+            </Box>
+          }
           disableTypography
           secondary={
             <Box display="flex" flexDirection="column">
-              {sources && sources.length > 1 && video.videoId !== undefined && onSelectSource ? (
-                <Box onClick={(e) => e.stopPropagation()} sx={{ mb: 0.5 }}>
-                  <SourceToggle sources={sources} value={video.videoId} onChange={onSelectSource} />
-                </Box>
-              ) : null}
               {showTags && video.tags.length ? (
                 <Box display="flex" flexDirection="row" flexWrap="wrap" sx={{ gap: 1 }}>
                   {video.tags.map((tag, i) => (
@@ -135,7 +153,14 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
                 ''
               )}
               {numMatches !== undefined ? (
-                <span>{`${numMatches} match${numMatches > 1 ? 'es' : ''}`}</span>
+                <span>
+                  {`${numMatches} match${numMatches > 1 ? 'es' : ''}`}
+                  {otherSourceMatches > 0
+                    ? ` (+${otherSourceMatches} in other source${
+                        otherSourceMatches > 1 ? 's' : ''
+                      })`
+                    : ''}
+                </span>
               ) : (
                 ''
               )}
@@ -243,7 +268,9 @@ const VideoListItem = memo(function VideoListItem(props: VideoListItemProps) {
               {unavailable !== null ? (
                 <Alert severity="warning">
                   This video is unavailable — it may be blocked, private, or removed.{' '}
-                  {sources && sources.length > 1 ? 'Try another source above. ' : null}
+                  {sources && sources.length > 1
+                    ? 'Try another source from the video options menu. '
+                    : null}
                   {!(sources && sources.length > 1) ? (
                     <>
                       <Link href={DISCORD_URL} target="_blank" rel="noopener">

@@ -123,17 +123,19 @@ export default function SearchList(props: SearchListProps) {
         next.set(groupId, videoId);
         return next;
       });
-      // If the currently-open row belongs to this group, collapse it so the
-      // previous source's subtitles don't remain visible after a source switch.
+      // If the currently-open row belongs to this group, keep it open but
+      // re-point it at the newly-selected source so the player swaps inline.
+      const newSource = groupSourceList.find((s) => s.videoId === videoId);
       setOpen((prevOpen) => {
-        if (prevOpen !== null && groupSourceList.some((s) => s.url === prevOpen)) {
-          setCurrentVideo(null);
-          return null;
+        if (prevOpen !== null && newSource && groupSourceList.some((s) => s.url === prevOpen)) {
+          const idx = props.searchResult?.findIndex((v) => v.url === newSource.url) ?? -1;
+          setCurrentVideo(idx >= 0 ? { url: newSource.url, i: idx } : null);
+          return newSource.url;
         }
         return prevOpen;
       });
     },
-    []
+    [props.searchResult]
   );
 
   const handleClickSubtitleListItem = useCallback(
@@ -291,6 +293,18 @@ export default function SearchList(props: SearchListProps) {
     return bookmarkedIdsByVideoUrl.get(liveCurrentVideo.video.url) || new Set<string>();
   }, [liveCurrentVideo, bookmarkedIdsByVideoUrl]);
 
+  // Grouped sources for search mode (one entry per stream group).
+  const groupedSources = useMemo(() => {
+    if (props.bookmarksMode || !props.searchResult?.length) return [];
+    return groupSources(props.searchResult, selectedSourceByGroup);
+  }, [props.bookmarksMode, props.searchResult, selectedSourceByGroup]);
+
+  // The group whose source is currently open, for the options popper.
+  const openGroup = useMemo(() => {
+    if (!liveCurrentVideo) return null;
+    return groupedSources.find((g) => g.sources.some((s) => s.url === liveCurrentVideo.video.url));
+  }, [groupedSources, liveCurrentVideo]);
+
   return props.searchResult ? (
     <>
       <ListSubheader component="div" sx={{ zIndex: 0, lineHeight: 1.5 }}>
@@ -331,7 +345,7 @@ export default function SearchList(props: SearchListProps) {
               );
             })
           : // Search mode: group sources, render one row per group.
-            groupSources(props.searchResult, selectedSourceByGroup).map((group) => {
+            groupedSources.map((group) => {
               const video = group.visible as Video;
               const i = props.searchResult!.findIndex((v) => v.url === video.url);
               return (
@@ -356,8 +370,6 @@ export default function SearchList(props: SearchListProps) {
                     isAdmin: props.isAdmin,
                     onClickEdit: props.onClickEdit,
                     sources: group.sources as Video[],
-                    onSelectSource: (videoId: number) =>
-                      handleSelectSource(group.groupId, videoId, group.sources as Video[]),
                   }}
                 />
               );
@@ -396,6 +408,14 @@ export default function SearchList(props: SearchListProps) {
         toggleTheatreMode={toggleTheatreMode}
         syncSubtitles={syncSubtitles}
         setSyncSubtitles={setSyncSubtitles}
+        sources={openGroup?.sources}
+        sourceValue={openGroup ? (openGroup.visible.videoId as number) : undefined}
+        onSelectSource={
+          openGroup
+            ? (videoId: number) =>
+                handleSelectSource(openGroup.groupId, videoId, openGroup.sources as Video[])
+            : undefined
+        }
       />
       <MobileOptionsPopper
         anchorEl={mobileOptionsAnchorEl}
