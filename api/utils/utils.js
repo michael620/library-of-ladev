@@ -22,127 +22,144 @@ const processTSVLine = (data, id, subtitles, speakers) => {
   }
 };
 
-const onCloseTSV = async (subtitles, url, resolve) => {
-  const sql = `
-    DELETE FROM subtitle
-    WHERE owner = (
-        SELECT id FROM video WHERE url = '${url}'
-    );
-    `;
-  await sails.sendNativeQuery(sql);
+const onCloseTSV = async (subtitles, url, db) => {
+  const videoResult = await sails
+    .sendNativeQuery('SELECT id FROM video WHERE url = $1', [url])
+    .usingConnection(db);
+  const videoRow = videoResult.rows[0];
+  if (!videoRow) {
+    return 0;
+  }
+  const videoId = videoRow.id;
+  await sails
+    .sendNativeQuery('DELETE FROM subtitle WHERE owner = $1', [videoId])
+    .usingConnection(db);
+  let rowCount = 0;
   if (subtitles.length !== 0) {
-    //split subtitles into chunks of 1000
+    // split subtitles into chunks of 1000
     const chunks = [];
     for (let i = 0; i < subtitles.length; i += 1000) {
       chunks.push(subtitles.slice(i, i + 1000));
     }
     for (const chunk of chunks) {
-      await Subtitle.createEach(chunk);
-    }
-  }
-  resolve();
-};
-
-const createOrUpdateVideos = async (video_metadata) => {
-  if (!video_metadata) return;
-
-  const { resolveGroupPlan } = require('./groupIngest');
-  const metaRows = Object.values(video_metadata);
-  const plan = resolveGroupPlan(metaRows);
-  for (const warning of plan.warnings) {
-    sails.log.warn(warning);
-  }
-
-  // Map from groupKey -> numeric stream_group.id (lazily populated)
-  const groupIdCache = new Map();
-
-  for (const resolvedRow of plan.rows) {
-    const { url, groupKey } = resolvedRow;
-    const metadata = video_metadata[url];
-    const { title, date, tags } = metadata;
-    const { TAG_TYPES } = require('../../shared/constants');
-
-    // Lazily findOrCreate the StreamGroup keyed on maintainerKey so re-ingest
-    // rejoins the existing group row instead of creating a new orphan.
-    if (!groupIdCache.has(groupKey)) {
-      const sg = await StreamGroup.findOrCreate({ maintainerKey: groupKey }, { maintainerKey: groupKey });
-      groupIdCache.set(groupKey, sg.id);
-    }
-    const groupDbId = groupIdCache.get(groupKey);
-
-    await Video.findOrCreate({ url }, { url, title, date, group: groupDbId });
-    await Video.updateOne({ url }, { url, title, date, group: groupDbId });
-
-    if (tags) {
-      const tagsArr = tags.split(', ');
-      const sqls = [];
-      for (const tag of tagsArr) {
-        const tagType = tag.includes('(cameo)')
-          ? TAG_TYPES.CAMEOS.text
-          : TAG_TYPES.APPEARANCES.text;
-        sqls.push(`
-                    INSERT INTO tag (name, tag_type)
-                    VALUES ('${tag}', '${tagType}')
-                    ON CONFLICT (name) DO NOTHING;
-                `);
+      // Build a multi-row parameterized INSERT
+      const placeholders = [];
+      const values = [];
+      let paramIdx = 1;
+      for (const row of chunk) {
+        placeholders.push(
+          `($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++})`
+        );
+        values.push(videoId, row.startTime, row.endTime, row.text, row.speaker);
       }
-      const formattedTags = tagsArr.map((item) => `'${item}'`).join(', ');
-      sqls.push(`
-                INSERT INTO tagmap (video_id, tag_id)
-                SELECT v.id, t.id
-                FROM tag t
-                JOIN video v ON v.url = '${url}'
-                WHERE t.name IN (${formattedTags})
-                ON CONFLICT DO NOTHING;
-            `);
-      for (const sql of sqls) {
-        await sails.sendNativeQuery(sql);
-      }
+      const result = await sails
+        .sendNativeQuery(
+          `INSERT INTO subtitle (owner, "startTime", "endTime", text, speaker) VALUES ${placeholders.join(
+            ', '
+          )}`,
+          values
+        )
+        .usingConnection(db);
+      rowCount += result.rowCount || chunk.length;
     }
   }
+  return rowCount;
+};
 
-  // Resolve each group's default_video_id in a follow-up pass.
-  // Only overwrite existing default if upload explicitly sets is_default
-  for (const [groupKey, { url: defaultUrl, explicit }] of plan.groupDefaults) {
-    const groupId = groupIdCache.get(groupKey);
-    if (!explicit) {
-      const group = await StreamGroup.findOne({ id: groupId });
-      if (group && group.defaultVideo != null) continue;
+const upsertVideo = async (meta, groupDbId, db) => {
+  const { url, title, date, tags } = meta;
+  const { TAG_TYPES } = require('../../shared/constants');
+
+  // (xmax = 0) is true for INSERT, false for UPDATE.
+  const videoResult = await sails
+    .sendNativeQuery(
+      `INSERT INTO video (url, title, date, group_id)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (url) DO UPDATE SET title = $2, date = $3, group_id = $4
+       RETURNING (xmax = 0) AS inserted`,
+      [url, title, date, groupDbId]
+    )
+    .usingConnection(db);
+
+  const created = videoResult.rows[0].inserted;
+
+  if (tags) {
+    const tagsArr = tags.split(', ');
+
+    // Ensure each tag row exists
+    for (const tag of tagsArr) {
+      const tagType = tag.includes('(cameo)') ? TAG_TYPES.CAMEOS.text : TAG_TYPES.APPEARANCES.text;
+      await sails
+        .sendNativeQuery(
+          `INSERT INTO tag (name, tag_type) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
+          [tag, tagType]
+        )
+        .usingConnection(db);
     }
-    const v = await Video.findOne({ url: defaultUrl });
-    await StreamGroup.updateOne({ id: groupId }).set({ defaultVideo: v.id });
+
+    // Link all tags to the video
+    await sails
+      .sendNativeQuery(
+        `INSERT INTO tagmap (video_id, tag_id)
+         SELECT v.id, t.id
+         FROM tag t
+         JOIN video v ON v.url = $1
+         WHERE t.name = ANY($2::text[])
+         ON CONFLICT DO NOTHING`,
+        [url, tagsArr]
+      )
+      .usingConnection(db);
   }
 
-  await sails.hooks['db-refresh'].fetchAndUpdate();
+  return { created };
 };
 
-const createSubtitle = async (fd, url) => {
-  const { createInterface } = require('readline');
-  const { createReadStream } = require('fs');
-  const video = await Video.findOne({ url });
-  if (!video) {
-    sails.log('Error trying to find video ' + url);
-    return Promise.resolve();
-  }
-  return new Promise(function (resolve) {
-    const subtitles = [];
-    const speakers = new Set();
-    createInterface({ input: createReadStream(fd) })
-      .on('line', (data) => processTSVLine(data, video.id, subtitles, speakers))
-      .on('close', () => onCloseTSV(subtitles, url, resolve));
-  });
-};
-
-const createTranscript = async (fd, url) => {
+const createSubtitle = async (fd, url, db, warnings) => {
   const { readFileSync } = require('fs');
-  const video = await Video.findOne({ url });
-  if (!video) {
-    sails.log('Error trying to find video ' + url);
-    return Promise.resolve();
+  const lines = readFileSync(fd, 'utf8').split(/\r?\n/);
+  const subtitles = [];
+  const speakers = new Set();
+  for (const line of lines) {
+    processTSVLine(line, 0, subtitles, speakers);
   }
+
+  const videoResult = await sails
+    .sendNativeQuery('SELECT id FROM video WHERE url = $1', [url])
+    .usingConnection(db);
+  const videoRow = videoResult.rows[0];
+  if (!videoRow) {
+    warnings.push(`createSubtitle: video not found for url "${url}", skipping subtitle ingest`);
+    return { rows: 0 };
+  }
+
+  const rowCount = await onCloseTSV(subtitles, url, db);
+  return { rows: rowCount };
+};
+
+const createTranscript = async (fd, url, db, warnings) => {
+  const { readFileSync } = require('fs');
+
+  const videoResult = await sails
+    .sendNativeQuery('SELECT id FROM video WHERE url = $1', [url])
+    .usingConnection(db);
+  const videoRow = videoResult.rows[0];
+  if (!videoRow) {
+    warnings.push(`createTranscript: video not found for url "${url}", skipping transcript ingest`);
+    return;
+  }
+
+  const videoId = videoRow.id;
   const rawText = readFileSync(fd, 'utf8');
-  await Transcript.destroyOne({ owner: video.id });
-  await Transcript.create({ owner: video.id, text: rawText });
+
+  // Delete any existing transcript
+  await sails
+    .sendNativeQuery('DELETE FROM transcript WHERE owner = $1', [videoId])
+    .usingConnection(db);
+
+  // Insert the new transcript
+  await sails
+    .sendNativeQuery('INSERT INTO transcript (owner, text) VALUES ($1, $2)', [videoId, rawText])
+    .usingConnection(db);
 };
 
 const buildVideoMetadata = async (fd) => {
@@ -150,24 +167,32 @@ const buildVideoMetadata = async (fd) => {
   const { createReadStream } = require('fs');
   const dayjs = require('dayjs');
   const defaultDate = dayjs().format('YYYY-MM-DD');
-  return new Promise(function (resolve) {
+  return new Promise(function (resolve, reject) {
     const metadata = {};
-    createInterface({ input: createReadStream(fd) })
-      .on('line', (data) => {
-        const [url, title = 'Untitled Stream', date = defaultDate, tags = '', groupId = '', isDefault = ''] = data.split('\t');
-        if (!url || url === 'url') return;
-        metadata[url] = {
-          url,
-          date,
-          title,
-          tags,
-          groupId: groupId || undefined,
-          isDefault: isDefault !== '',
-        };
-      })
-      .on('close', () => {
-        resolve(metadata);
-      });
+    const stream = createReadStream(fd);
+    const rl = createInterface({ input: stream });
+    rl.on('line', (data) => {
+      const [
+        url,
+        title = 'Untitled Stream',
+        date = defaultDate,
+        tags = '',
+        groupId = '',
+        isDefault = '',
+      ] = data.split('\t');
+      if (!url || url === 'url') return;
+      metadata[url] = {
+        url,
+        date,
+        title,
+        tags,
+        groupId: groupId || undefined,
+        isDefault: isDefault !== '',
+      };
+    });
+    rl.on('close', () => resolve(metadata));
+    rl.on('error', reject);
+    stream.on('error', reject);
   });
 };
 
@@ -177,7 +202,14 @@ const buildVideoMetadataFromText = (data) => {
   const dayjs = require('dayjs');
   const defaultDate = dayjs().format('YYYY-MM-DD');
   for (const line of lines) {
-    const [url, title = 'Untitled Stream', date = defaultDate, tags = '', groupId = '', isDefault = ''] = line.split('\t');
+    const [
+      url,
+      title = 'Untitled Stream',
+      date = defaultDate,
+      tags = '',
+      groupId = '',
+      isDefault = '',
+    ] = line.split('\t');
     if (url === 'url') continue;
     metadata[url] = {
       url,
@@ -284,7 +316,7 @@ module.exports = {
   processRawResult,
   processRawResultFTS,
   processRawResultSubtitle,
-  createOrUpdateVideos,
+  upsertVideo,
   createSubtitle,
   createTranscript,
   buildVideoMetadata,
